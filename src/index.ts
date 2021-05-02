@@ -1,7 +1,7 @@
 import { truncate } from 'lodash';
 import { GitProcess } from 'dugite';
 
-import { GitStep, IGitUserInfos, ILogger } from './interface';
+import { GitStep, IGitUserInfos, IGitUserInfosWithoutToken, ILogger } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
 import { credentialOn, credentialOff } from './credential';
@@ -23,7 +23,7 @@ export async function initGit(options: {
   /** the storage service url we are sync to, for example your github repo url */
   remoteUrl?: string;
   /** user info used in the commit message */
-  userInfo?: IGitUserInfos;
+  userInfo?: IGitUserInfosWithoutToken;
   logger?: ILogger;
 }): Promise<void> {
   const { dir, remoteUrl, userInfo, syncImmediately, logger } = options;
