@@ -11,3 +11,4 @@ flycheck_*
 /scratch
 /secrets
 .dccache
+dist/
