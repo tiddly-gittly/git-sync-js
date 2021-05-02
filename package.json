@@ -1,0 +1,52 @@
+{
+  "name": "git-sync-js",
+  "version": "0.0.1",
+  "description": "JS implementation for Git-Sync, a handy script that backup your notes in a git repo to the remote git services.",
+  "homepage": "https://github.com/linonetwo/git-sync-js",
+  "bugs": {
+    "url": "https://github.com/linonetwo/git-sync-js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/linonetwo/git-sync-js.git"
+  },
+  "license": "MIT",
+  "author": "Lin Onetwo <linonetwo012@gmail.com> (https://github.com/linonetwo)",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist/src/"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run clean && npm run compile",
+    "clean": "rimraf --no-glob dist",
+    "compile": "tsc",
+    "docs": "docs-ts",
+    "lint": "eslint --ext ts .",
+    "lint:fix": "eslint --ext ts --fix .",
+    "prettier:check": "prettier --list-different src/**/*.ts",
+    "prettier:write": "prettier --write src/**/*.ts"
+  },
+  "dependencies": {
+    "dugite": "^1.103.0",
+    "fs-extra": "^9.1.0",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.11",
+    "@types/lodash": "^4.14.168",
+    "@types/node": "^15.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
+    "docs-ts": "^0.6.10",
+    "eslint": "^7.25.0",
+    "eslint-plugin-security": "^1.4.0",
+    "prettier": "2.2.1",
+    "rimraf": "^3.0.2",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
+  },
+  "keywords": [
+    "git,sync,notebook,commit,rebase,note"
+  ]
+}

@@ -1,0 +1,78 @@
+{
+    "rules": {
+        "@typescript-eslint/unified-signatures": "warn",
+        "@typescript-eslint/restrict-plus-operands": "warn",
+        "@typescript-eslint/prefer-string-starts-ends-with": "warn",
+        "@typescript-eslint/prefer-namespace-keyword": "warn",
+        "@typescript-eslint/prefer-includes": "warn",
+        "@typescript-eslint/prefer-for-of": "warn",
+        "@typescript-eslint/no-useless-constructor": "warn",
+        "@typescript-eslint/no-unnecessary-type-assertion": [
+            "warn"
+        ],
+        "@typescript-eslint/require-array-sort-compare": "error",
+        "@typescript-eslint/promise-function-async": [
+            "error"
+        ],
+        "@typescript-eslint/no-use-before-define": [
+            "error",
+            "nofunc"
+        ],
+        "@typescript-eslint/no-extra-parens": [
+            "error"
+        ],
+        "@typescript-eslint/no-explicit-any": "error",
+        "@typescript-eslint/ban-ts-comment": "error",
+        "@typescript-eslint/await-thenable": "error",
+        "no-extra-parens": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "warn",
+            {
+                "argsIgnorePattern": "^_"
+            }
+        ],
+        "@typescript-eslint/unbound-method": [
+            "warn",
+            {
+                "ignoreStatic": true
+            }
+        ],
+        "@typescript-eslint/no-inferrable-types": [
+            "error",
+            {
+                "ignoreProperties": true,
+                "ignoreParameters": true
+            }
+        ],
+        "@typescript-eslint/no-this-alias": [
+            "error",
+            {
+                "allowedNames": [
+                    "self"
+                ],
+                "allowDestructuring": false
+            }
+        ],
+        "@typescript-eslint/explicit-function-return-type": [
+            "warn",
+            {
+                "allowExpressions": true
+            }
+        ]
+    },
+    "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "plugin:security/recommended",
+        "plugin:ava/recommended"
+    ],
+    "plugins": [
+        "@typescript-eslint",
+        "security"
+    ],
+    "parserOptions": {
+        "sourceType": "module",
+        "ecmaVersion": 2018,
+        "project": "./tsconfig.json"
+    },
+    "parser": "@typescript-eslint/parser"
+}
