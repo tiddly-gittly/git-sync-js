@@ -1,5 +1,5 @@
 import { truncate } from 'lodash';
-import { IGitUserInfos } from './interface';
+import { IGitUserInfos, IGitUserInfosWithoutToken } from './interface';
 
 export class AssumeSyncError extends Error {
   constructor(extraMessage?: string) {
@@ -29,7 +29,7 @@ export class GitPullPushError extends Error {
       /** the storage service url we are sync to, for example your github repo url */
       remoteUrl?: string;
       /** user info used in the commit message */
-      userInfo?: IGitUserInfos;
+      userInfo?: IGitUserInfos | IGitUserInfosWithoutToken;
     },
     extraMessages: string,
   ) {
@@ -39,7 +39,7 @@ export class GitPullPushError extends Error {
       ...configuration,
       userInfo: {
         ...(configuration.userInfo ?? {}),
-        accessToken: truncate(configuration.userInfo?.accessToken, {
+        accessToken: truncate((configuration?.userInfo as IGitUserInfos)?.accessToken, {
           length: 24,
         }),
       },

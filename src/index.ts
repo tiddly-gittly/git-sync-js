@@ -23,7 +23,7 @@ export async function initGit(options: {
   /** the storage service url we are sync to, for example your github repo url */
   remoteUrl?: string;
   /** user info used in the commit message */
-  userInfo?: IGitUserInfosWithoutToken;
+  userInfo?: IGitUserInfosWithoutToken | IGitUserInfos;
   logger?: ILogger;
 }): Promise<void> {
   const { dir, remoteUrl, userInfo, syncImmediately, logger } = options;
@@ -46,7 +46,7 @@ export async function initGit(options: {
     return;
   }
   // sync to remote, start config synced note
-  if (userInfo?.accessToken === undefined || userInfo?.accessToken?.length === 0) {
+  if (userInfo === undefined || !('accessToken' in userInfo) || userInfo?.accessToken?.length === 0) {
     throw new SyncParameterMissingError('accessToken');
   }
   if (remoteUrl === undefined || remoteUrl.length === 0) {
