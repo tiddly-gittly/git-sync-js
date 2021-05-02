@@ -1,7 +1,3 @@
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
-import { GitChannel } from '@/constants/channels';
-import { ModifiedFileList } from './inspect';
-
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */
   accessToken: string;
@@ -14,36 +10,48 @@ export interface IGitUserInfosWithoutToken {
   gitUserName: string;
 }
 
-/**
- * System Preferences are not stored in storage but stored in macOS Preferences.
- * It can be retrieved and changed using Electron APIs
+/** custom logger to report progress on each step
+ * we don't use logger to report error, we throw errors.
  */
-export interface IGitService {
-  /**
-   * Call commitAndSync every period of time. This cannot be used as promise, as said in https://github.com/lodash/lodash/issues/4700
-   */
-  debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
-  updateGitInfoTiddler(githubRepoName: string): Promise<void>;
-  getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
-  /**
-   * Run git init in a folder, prepare remote origin if isSyncedWiki
-   */
-  initWikiGit(wikiFolderPath: string, isMainWiki: boolean, isSyncedWiki: true, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  initWikiGit(wikiFolderPath: string, isMainWiki: boolean, isSyncedWiki?: false): Promise<void>;
-  commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  /** Inspect git's remote url from folder's .git config */
-  getWorkspacesRemote(wikiFolderPath: string): Promise<string>;
-  clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
+export interface ILogger {
+  /** used to report progress for human user to read */
+  info: (message: GitStep, context: ILoggerContext) => unknown;
+  /** used to report debug logs */
+  log: (message: string, context: ILoggerContext) => unknown;
+  /** used to report failed optional progress */
+  warn: (message: string, context: ILoggerContext) => unknown;
 }
-export const GitServiceIPCDescriptor = {
-  channel: GitChannel.name,
-  properties: {
-    debounceCommitAndSync: ProxyPropertyType.Function,
-    updateGitInfoTiddler: ProxyPropertyType.Function,
-    getModifiedFileList: ProxyPropertyType.Function,
-    initWikiGit: ProxyPropertyType.Function,
-    commitAndSync: ProxyPropertyType.Function,
-    getWorkspacesRemote: ProxyPropertyType.Function,
-    clone: ProxyPropertyType.Function,
-  },
-};
+/** context to tell logger which function we are in */
+export interface ILoggerContext {
+  functionName: string;
+  step: GitStep;
+  dir?: string;
+  remoteUrl?: string;
+}
+
+export enum GitStep {
+  StartGitInitialization = 'StartGitInitialization',
+  PrepareCloneOnlineWiki = 'PrepareCloneOnlineWiki',
+  GitRepositoryConfigurationFinished = 'GitRepositoryConfigurationFinished',
+  StartConfiguringGithubRemoteRepository = 'StartConfiguringGithubRemoteRepository',
+  StartBackupToGitRemote = 'StartBackupToGitRemote',
+  PrepareSync = 'PrepareSync',
+  HaveThingsToCommit = 'HaveThingsToCommit',
+  CommitComplete = 'CommitComplete',
+  PreparingUserInfo = 'PreparingUserInfo',
+  FetchingData = 'FetchingData',
+  NoNeedToSync = 'NoNeedToSync',
+  LocalAheadStartUpload = 'LocalAheadStartUpload',
+  LocalStateBehindSync = 'LocalStateBehindSync',
+  LocalStateDivergeRebase = 'LocalStateDivergeRebase',
+  RebaseResultChecking = 'RebaseResultChecking',
+  RebaseConflictNeedsResolve = 'RebaseConflictNeedsResolve',
+  RebaseSucceed = 'RebaseSucceed',
+  GitPushFailed = 'GitPushFailed',
+  GitMergeFailed = 'GitMergeFailed',
+  /** this means our algorithm have some problems */
+  SyncFailedAlgorithmWrong = 'SyncFailedAlgorithmWrong',
+  PerformLastCheckBeforeSynchronizationFinish = 'PerformLastCheckBeforeSynchronizationFinish',
+  SynchronizationFinish = 'SynchronizationFinish',
+  StartFetchingFromGithubRemote = 'StartFetchingFromGithubRemote',
+}
