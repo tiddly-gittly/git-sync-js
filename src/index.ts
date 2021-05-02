@@ -2,63 +2,64 @@ import { truncate, debounce } from 'lodash';
 import { GitProcess } from 'dugite';
 
 import * as gitSync from './sync';
-import * as github from './github';
+import * as credential from './credential';
 import { getModifiedFileList, ModifiedFileList, getRemoteUrl } from './inspect';
-import { IGitService, IGitUserInfos } from './interface';
+import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
+import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
 
-export async function initWikiGit(
-  wikiFolderPath: string,
-  isMainWiki: boolean,
-  isSyncedWiki?: boolean,
-  githubRepoUrl?: string,
-  userInfo?: IGitUserInfos
-): Promise<void> {
-  const logProgress = (message: string): unknown =>
-    logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
-  const logInfo = (message: string): unknown => logger.info(message, { function: 'initWikiGit' });
+export async function initGit(options: {
+  /** wiki folder path, can be relative */
+  dir: string;
+  /** should we sync after git init? */
+  syncImmediately?: boolean;
+  /** the storage service url we are sync to, for example your github repo url */
+  remoteUrl?: string;
+  /** user info used in the commit message */
+  userInfo?: IGitUserInfos;
+  logger?: ILogger;
+}): Promise<void> {
+  const logProgress = (step: GitStep): unknown =>
+    options.logger?.info(step, {
+      functionName: 'initGit',
+      step,
+    });
+  const logDebug = (message: string, step: GitStep): unknown => options.logger?.log(message, { functionName: 'initGit', step });
 
-  logProgress(i18n.t('Log.StartGitInitialization'));
-  const { gitUserName, email } = userInfo ?? defaultGitInfo;
-  await GitProcess.exec(['init'], wikiFolderPath);
-  await gitSync.commitFiles(wikiFolderPath, gitUserName, email);
+  logProgress(GitStep.StartGitInitialization);
+  const { gitUserName, email } = options.userInfo ?? defaultGitInfo;
+  await GitProcess.exec(['init'], options.dir);
+  await gitSync.commitFiles(options.dir, gitUserName, email);
 
-  // if we are config local wiki, we are done here
-  if (isSyncedWiki !== true) {
-    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
+  // if we are config local note git, we are done here
+  if (options.syncImmediately !== true) {
+    logProgress(GitStep.GitRepositoryConfigurationFinished);
     return;
   }
-  // start config synced wiki
-  if (userInfo?.accessToken === undefined) {
-    throw new Error(i18n.t('Log.GitTokenMissing') + 'accessToken');
+  // sync to remote, start config synced note
+  if (options.userInfo?.accessToken === undefined || options.userInfo?.accessToken?.length === 0) {
+    throw new SyncParameterMissingError('accessToken');
   }
-  if (githubRepoUrl === undefined) {
-    throw new Error(i18n.t('Log.GitTokenMissing') + 'githubRepoUrl');
+  if (options.remoteUrl === undefined || options.remoteUrl.length === 0) {
+    throw new SyncParameterMissingError('remoteUrl');
   }
-  logInfo(
-    `Using gitUrl ${githubRepoUrl ?? 'githubRepoUrl unset'} with gitUserName ${gitUserName} and accessToken ${truncate(
-      userInfo?.accessToken,
-      {
-        length: 24,
-      }
-    )}`
+  logDebug(
+    `Using gitUrl ${options.remoteUrl} with gitUserName ${gitUserName} and accessToken ${truncate(options.userInfo?.accessToken, {
+      length: 24,
+    })}`,
+    GitStep.StartConfiguringGithubRemoteRepository,
   );
-  logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-  await github.credentialOn(wikiFolderPath, githubRepoUrl, gitUserName, userInfo.accessToken);
-  logProgress(i18n.t('Log.StartBackupToGithubRemote'));
-  const defaultBranchName = await gitSync.getDefaultBranchName(wikiFolderPath);
-  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
-    ['push', 'origin', `${defaultBranchName}:${defaultBranchName}`],
-    wikiFolderPath
-  );
-  await github.credentialOff(wikiFolderPath);
-  if (isMainWiki && pushExitCode !== 0) {
-    logInfo(pushStdError);
-    const CONFIG_FAILED_MESSAGE = i18n.t('Log.GitRepositoryConfigurateFailed');
-    logProgress(CONFIG_FAILED_MESSAGE);
-    throw new Error(CONFIG_FAILED_MESSAGE);
+  logProgress(GitStep.StartConfiguringGithubRemoteRepository);
+  await credential.credentialOn(options.dir, options.remoteUrl, gitUserName, options.userInfo?.accessToken);
+  logProgress(GitStep.StartBackupToGitRemote);
+  const defaultBranchName = await gitSync.getDefaultBranchName(options.dir);
+  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', `${defaultBranchName}:${defaultBranchName}`], options.dir);
+  await credential.credentialOff(options.dir);
+  if (pushExitCode !== 0) {
+    logProgress(GitStep.GitPushFailed);
+    throw new GitPullPushError(options, pushStdError);
   } else {
-    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
+    logProgress(GitStep.SynchronizationFinish);
   }
 }
 
@@ -68,163 +69,191 @@ export async function initWikiGit(
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-export async function commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void> {
-  /** functions to send data to main thread */
-  const logProgress = (message: string): unknown =>
-    logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
-  const logInfo = (message: string): unknown =>
-    logger.info(message, { function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
+export async function commitAndSync(options: {
+  /** wiki folder path, can be relative */
+  dir: string;
+  /** the storage service url we are sync to, for example your github repo url */
+  remoteUrl?: string;
+  /** user info used in the commit message */
+  userInfo?: IGitUserInfos;
+  /** the commit message */
+  commitMessage?: string;
+  logger?: ILogger;
+}): Promise<void> {
+  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync' } = options;
+  const { gitUserName, email } = options.userInfo ?? defaultGitInfo;
+  const { accessToken } = options.userInfo ?? {};
 
-  if (this.disableSyncOnDevelopment && isDev) {
-    return;
-  }
-  const { gitUserName, email, accessToken } = userInfo;
   if (accessToken === '' || accessToken === undefined) {
-    throw new Error(i18n.t('Log.GitTokenMissing'));
+    throw new SyncParameterMissingError('accessToken');
   }
-  const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
-  const defaultBranchName = await gitSync.getDefaultBranchName(wikiFolderPath);
+  if (remoteUrl === '' || remoteUrl === undefined) {
+    throw new SyncParameterMissingError('remoteUrl');
+  }
+
+  const logProgress = (step: GitStep): unknown =>
+    options.logger?.info(step, {
+      functionName: 'commitAndSync',
+      step,
+      dir,
+      remoteUrl,
+    });
+  const logDebug = (message: string, step: GitStep): unknown =>
+    options.logger?.log(message, {
+      functionName: 'commitAndSync',
+      step,
+      dir,
+      remoteUrl,
+    });
+  const logWarn = (message: string, step: GitStep): unknown =>
+    options.logger?.warn(message, {
+      functionName: 'commitAndSync',
+      step,
+      dir,
+      remoteUrl,
+    });
+
+  const defaultBranchName = await gitSync.getDefaultBranchName(dir);
+  /** when push to origin, we need to specify the local branch name and remote branch name */
   const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
-  // update git info tiddler for plugins to use, for example, linonetwo/github-external-image
-  let wikiRepoName = new URL(githubRepoUrl).pathname;
-  if (wikiRepoName.startsWith('/')) {
-    wikiRepoName = wikiRepoName.replace('/', '');
-  }
-  if (wikiRepoName.length > 0) {
-    await this.updateGitInfoTiddler(wikiRepoName);
-  }
+
   // preflight check
-  const repoStartingState = await gitSync.getGitRepositoryState(wikiFolderPath, logInfo, logProgress);
+  const repoStartingState = await gitSync.getGitRepositoryState(dir, options.logger);
   if (repoStartingState.length > 0 || repoStartingState === '|DIRTY') {
-    const SYNC_MESSAGE = i18n.t('Log.PrepareSync');
-    logProgress(SYNC_MESSAGE);
-    logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${gitUserName} <${email}>`);
+    logProgress(GitStep.PrepareSync);
+    logDebug(`${dir} , ${gitUserName} <${email}>`, GitStep.PrepareSync);
   } else if (repoStartingState === 'NOGIT') {
-    const CANT_SYNC_MESSAGE = i18n.t('Log.CantSyncGitNotInitialized');
-    logProgress(CANT_SYNC_MESSAGE);
-    throw new Error(CANT_SYNC_MESSAGE);
+    throw new CantSyncGitNotInitializedError();
   } else {
     // we may be in middle of a rebase, try fix that
-    await gitSync.continueRebase(wikiFolderPath, gitUserName, email, logInfo, logProgress);
+    await gitSync.continueRebase(dir, gitUserName, email, options.logger);
   }
-  if (await gitSync.haveLocalChanges(wikiFolderPath)) {
-    const SYNC_MESSAGE = i18n.t('Log.HaveThingsToCommit');
-    logProgress(SYNC_MESSAGE);
-    logInfo(`${SYNC_MESSAGE} ${commitMessage}`);
-    const { exitCode: commitExitCode, stderr: commitStdError } = await gitSync.commitFiles(
-      wikiFolderPath,
-      gitUserName,
-      email,
-      commitMessage
-    );
+  if (await gitSync.haveLocalChanges(dir)) {
+    logProgress(GitStep.HaveThingsToCommit);
+    logDebug(commitMessage, GitStep.HaveThingsToCommit);
+    const { exitCode: commitExitCode, stderr: commitStdError } = await gitSync.commitFiles(dir, gitUserName, email, commitMessage);
     if (commitExitCode !== 0) {
-      logInfo('commit failed');
-      logInfo(commitStdError);
+      logWarn(`commit failed ${commitStdError}`, GitStep.CommitComplete);
     }
-    logProgress(i18n.t('Log.CommitComplete'));
+    logProgress(GitStep.CommitComplete);
   }
-  logProgress(i18n.t('Log.PreparingUserInfo'));
-  await github.credentialOn(wikiFolderPath, githubRepoUrl, gitUserName, accessToken);
-  logProgress(i18n.t('Log.FetchingData'));
-  await GitProcess.exec(['fetch', 'origin', defaultBranchName], wikiFolderPath);
+  logProgress(GitStep.PreparingUserInfo);
+  await credential.credentialOn(dir, remoteUrl, gitUserName, accessToken);
+  logProgress(GitStep.FetchingData);
+  await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
   //
-  switch (await gitSync.getSyncState(wikiFolderPath, logInfo)) {
+  switch (await gitSync.getSyncState(dir, options.logger)) {
     case 'noUpstream': {
-      logProgress(i18n.t('Log.CantSyncGitNotInitialized'));
-      await github.credentialOff(wikiFolderPath);
-      return;
+      await credential.credentialOff(dir);
+      throw new CantSyncGitNotInitializedError();
     }
     case 'equal': {
-      logProgress(i18n.t('Log.NoNeedToSync'));
-      await github.credentialOff(wikiFolderPath);
+      logProgress(GitStep.NoNeedToSync);
+      await credential.credentialOff(dir);
       return;
     }
     case 'ahead': {
-      logProgress(i18n.t('Log.LocalAheadStartUpload'));
-      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
+      logProgress(GitStep.LocalAheadStartUpload);
+      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], dir);
       if (exitCode === 0) {
         break;
       }
-      logProgress(i18n.t('Log.GitPushFailed'));
-      logInfo(`exitCode: ${exitCode}, stderr of git push:`);
-      logInfo(stderr);
+      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.GitPushFailed);
       break;
     }
     case 'behind': {
-      logProgress(i18n.t('Log.LocalStateBehindSync'));
-      const { exitCode, stderr } = await GitProcess.exec(
-        ['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`],
-        wikiFolderPath
-      );
+      logProgress(GitStep.LocalStateBehindSync);
+      const { exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`], dir);
       if (exitCode === 0) {
         break;
       }
-      logProgress(i18n.t('Log.GitMergeFailed'));
-      logInfo(`exitCode: ${exitCode}, stderr of git merge:`);
-      logInfo(stderr);
+      logWarn(`exitCode: ${exitCode}, stderr of git merge: ${stderr}`, GitStep.GitMergeFailed);
       break;
     }
     case 'diverged': {
-      logProgress(i18n.t('Log.LocalStateDivergeRebase'));
-      const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], wikiFolderPath);
+      logProgress(GitStep.LocalStateDivergeRebase);
+      const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir);
+      logProgress(GitStep.RebaseResultChecking);
       if (
         exitCode === 0 &&
-        (await gitSync.getGitRepositoryState(wikiFolderPath, logInfo, logProgress)).length === 0 &&
-        (await gitSync.getSyncState(wikiFolderPath, logInfo)) === 'ahead'
+        (await gitSync.getGitRepositoryState(dir, options.logger)).length === 0 &&
+        (await gitSync.getSyncState(dir, options.logger)) === 'ahead'
       ) {
-        logProgress(i18n.t('Log.RebaseSucceed'));
+        logProgress(GitStep.RebaseSucceed);
       } else {
-        await gitSync.continueRebase(wikiFolderPath, gitUserName, email, logInfo, logProgress);
-        logProgress(i18n.t('Log.RebaseConflictNeedsResolve'));
+        await gitSync.continueRebase(dir, gitUserName, email, options.logger);
+        logProgress(GitStep.RebaseConflictNeedsResolve);
       }
-      await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
+      await GitProcess.exec(['push', 'origin', branchMapping], dir);
       break;
     }
     default: {
-      logProgress(i18n.t('Log.SyncFailedSystemError'));
+      logProgress(GitStep.SyncFailedAlgorithmWrong);
     }
   }
-  await github.credentialOff(wikiFolderPath);
-  logProgress(i18n.t('Log.PerformLastCheckBeforeSynchronizationFinish'));
-  await gitSync.assumeSync(wikiFolderPath, logInfo, logProgress);
-  logProgress(i18n.t('Log.SynchronizationFinish'));
+  await credential.credentialOff(dir);
+  logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
+  await gitSync.assumeSync(dir, options.logger);
+  logProgress(GitStep.SynchronizationFinish);
 }
 
-export async function clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {
-  const logProgress = (message: string): unknown =>
-    logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
-  const logInfo = (message: string): unknown => logger.info(message, { function: 'clone' });
-  logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
-  logProgress(i18n.t('Log.StartGitInitialization'));
-  const { gitUserName, accessToken } = userInfo;
+export async function clone(options: {
+  /** wiki folder path, can be relative */
+  dir: string;
+  /** the storage service url we are sync to, for example your github repo url */
+  remoteUrl?: string;
+  /** user info used in the commit message */
+  userInfo?: IGitUserInfos;
+  logger?: ILogger;
+}): Promise<void> {
+  const { dir, remoteUrl } = options;
+  const { gitUserName } = options.userInfo ?? defaultGitInfo;
+  const { accessToken } = options.userInfo ?? {};
+
   if (accessToken === '' || accessToken === undefined) {
-    throw new Error(i18n.t('Log.GitTokenMissing'));
+    throw new SyncParameterMissingError('accessToken');
   }
-  logInfo(
-    i18n.t('Log.UsingUrlAnduserName', {
-      githubRepoUrl,
+  if (remoteUrl === '' || remoteUrl === undefined) {
+    throw new SyncParameterMissingError('remoteUrl');
+  }
+
+  const logProgress = (step: GitStep): unknown =>
+    options.logger?.info(step, {
+      functionName: 'commitAndSync',
+      step,
+      dir,
+      remoteUrl,
+    });
+  const logDebug = (message: string, step: GitStep): unknown =>
+    options.logger?.log(message, {
+      functionName: 'commitAndSync',
+      step,
+      dir,
+      remoteUrl,
+    });
+
+  logProgress(GitStep.PrepareCloneOnlineWiki);
+
+  logDebug(
+    JSON.stringify({
+      remoteUrl,
       gitUserName,
       accessToken: truncate(accessToken, {
         length: 24,
       }),
-    })
+    }),
+    GitStep.PrepareCloneOnlineWiki,
   );
-  await GitProcess.exec(['init'], repoFolderPath);
-  logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-  await github.credentialOn(repoFolderPath, githubRepoUrl, gitUserName, accessToken);
-  logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
-  const defaultBranchName = await gitSync.getDefaultBranchName(repoFolderPath);
-  const { stderr, exitCode } = await GitProcess.exec(
-    ['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`],
-    repoFolderPath
-  );
-  await github.credentialOff(repoFolderPath);
+  await GitProcess.exec(['init'], dir);
+  logProgress(GitStep.StartConfiguringGithubRemoteRepository);
+  await credential.credentialOn(dir, remoteUrl, gitUserName, accessToken);
+  logProgress(GitStep.StartFetchingFromGithubRemote);
+  const defaultBranchName = await gitSync.getDefaultBranchName(dir);
+  const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`], dir);
+  await credential.credentialOff(dir);
   if (exitCode !== 0) {
-    logInfo(stderr);
-    const CONFIG_FAILED_MESSAGE = i18n.t('Log.GitRepositoryConfigurateFailed');
-    logProgress(CONFIG_FAILED_MESSAGE);
-    throw new Error(CONFIG_FAILED_MESSAGE);
+    throw new GitPullPushError(options, pullStdError);
   } else {
-    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
+    logProgress(GitStep.SynchronizationFinish);
   }
 }
