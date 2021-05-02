@@ -1,20 +1,5 @@
 module.exports = {
   rules: {
-    'unicorn/prevent-abbreviations': [
-      'error',
-      {
-        whitelist: {
-          mod: true,
-          Mod: true,
-          props: true,
-          Props: true,
-          i18n: true,
-          i18next: true,
-          i18nMainBindings: true,
-          'i18next-electron-fs-backend': true,
-        },
-      },
-    ],
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/method-signature-style': 'off',
     'unicorn/no-array-reduce': 'off',
