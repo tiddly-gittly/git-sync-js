@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
-import path from 'path';
+import path from 'node:path';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
-import url from 'url';
+import url from 'node:url';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
 
@@ -21,7 +21,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
   const nonEmptyLines = compact(stdoutLines);
   const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+)$/.exec(line))).filter(
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
-  ) as unknown) as [unknown, string, string][];
+  ) as unknown) as Array<[unknown, string, string]>;
   return statusMatrixLines.map(([_, type, fileRelativePath]) => ({
     type,
     fileRelativePath,
@@ -58,7 +58,6 @@ export async function getRemoteRepoName(remoteUrl: string): Promise<string | und
   if (wikiRepoName.length > 0) {
     return wikiRepoName;
   }
-  return;
 }
 
 /**

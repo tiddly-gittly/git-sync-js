@@ -11,7 +11,7 @@ export class AssumeSyncError extends Error {
   }
 }
 export class SyncParameterMissingError extends Error {
-  constructor(parameterName: string = 'accessToken') {
+  constructor(parameterName = 'accessToken') {
     super(parameterName);
     this.name = 'SyncParameterMissingError';
     this.message = `E-2 We need ${parameterName} to sync to the cloud, you should pass ${parameterName} as parameters in userInfo.`;
