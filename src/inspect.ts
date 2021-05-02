@@ -50,14 +50,16 @@ export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
  * @param remoteUrl full github repository url or other repository url
  * @returns
  */
-export async function getRemoteRepoName(remoteUrl: string): Promise<string | undefined> {
+export function getRemoteRepoName(remoteUrl: string): string | undefined {
   let wikiRepoName = new url.URL(remoteUrl).pathname;
   if (wikiRepoName.startsWith('/')) {
+    // deepcode ignore GlobalReplacementRegex: change only the first match
     wikiRepoName = wikiRepoName.replace('/', '');
   }
   if (wikiRepoName.length > 0) {
     return wikiRepoName;
   }
+  return undefined;
 }
 
 /**
