@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
-import path from 'node:path';
+import path from 'path';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
-import url from 'node:url';
+import url from 'url';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
 
