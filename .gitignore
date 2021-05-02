@@ -10,3 +10,4 @@ flycheck_*
 /coverage.lcov
 /scratch
 /secrets
+.dccache
