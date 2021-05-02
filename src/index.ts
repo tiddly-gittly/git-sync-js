@@ -1,12 +1,19 @@
-import { truncate, debounce } from 'lodash';
+import { truncate } from 'lodash';
 import { GitProcess } from 'dugite';
 
-import * as gitSync from './sync';
-import * as credential from './credential';
-import { getModifiedFileList, ModifiedFileList, getRemoteUrl } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
+import { credentialOn, credentialOff } from './credential';
+import { getDefaultBranchName, getGitRepositoryState, haveLocalChanges, getSyncState, assumeSync } from './inspect';
+import { commitFiles, continueRebase } from './sync';
+
+export * from './interface';
+export * from './defaultGitInfo';
+export * from './errors';
+export * from './credential';
+export * from './inspect';
+export * from './sync';
 
 export async function initGit(options: {
   /** wiki folder path, can be relative */
@@ -29,7 +36,7 @@ export async function initGit(options: {
   logProgress(GitStep.StartGitInitialization);
   const { gitUserName, email } = options.userInfo ?? defaultGitInfo;
   await GitProcess.exec(['init'], options.dir);
-  await gitSync.commitFiles(options.dir, gitUserName, email);
+  await commitFiles(options.dir, gitUserName, email);
 
   // if we are config local note git, we are done here
   if (options.syncImmediately !== true) {
@@ -50,11 +57,11 @@ export async function initGit(options: {
     GitStep.StartConfiguringGithubRemoteRepository,
   );
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
-  await credential.credentialOn(options.dir, options.remoteUrl, gitUserName, options.userInfo?.accessToken);
+  await credentialOn(options.dir, options.remoteUrl, gitUserName, options.userInfo?.accessToken);
   logProgress(GitStep.StartBackupToGitRemote);
-  const defaultBranchName = await gitSync.getDefaultBranchName(options.dir);
+  const defaultBranchName = await getDefaultBranchName(options.dir);
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', `${defaultBranchName}:${defaultBranchName}`], options.dir);
-  await credential.credentialOff(options.dir);
+  await credentialOff(options.dir);
   if (pushExitCode !== 0) {
     logProgress(GitStep.GitPushFailed);
     throw new GitPullPushError(options, pushStdError);
@@ -64,10 +71,7 @@ export async function initGit(options: {
 }
 
 /**
- *
- * @param {string} wikiFolderPath
- * @param {string} githubRepoUrl
- * @param {{ login: string, email: string, accessToken: string }} userInfo
+ * `git add .` + `git commit` + `git rebase` or something that can sync bi-directional
  */
 export async function commitAndSync(options: {
   /** wiki folder path, can be relative */
@@ -113,43 +117,43 @@ export async function commitAndSync(options: {
       remoteUrl,
     });
 
-  const defaultBranchName = await gitSync.getDefaultBranchName(dir);
+  const defaultBranchName = await getDefaultBranchName(dir);
   /** when push to origin, we need to specify the local branch name and remote branch name */
   const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
 
   // preflight check
-  const repoStartingState = await gitSync.getGitRepositoryState(dir, options.logger);
+  const repoStartingState = await getGitRepositoryState(dir, options.logger);
   if (repoStartingState.length > 0 || repoStartingState === '|DIRTY') {
     logProgress(GitStep.PrepareSync);
     logDebug(`${dir} , ${gitUserName} <${email}>`, GitStep.PrepareSync);
   } else if (repoStartingState === 'NOGIT') {
-    throw new CantSyncGitNotInitializedError();
+    throw new CantSyncGitNotInitializedError(dir);
   } else {
     // we may be in middle of a rebase, try fix that
-    await gitSync.continueRebase(dir, gitUserName, email, options.logger);
+    await continueRebase(dir, gitUserName, email, options.logger);
   }
-  if (await gitSync.haveLocalChanges(dir)) {
+  if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
     logDebug(commitMessage, GitStep.HaveThingsToCommit);
-    const { exitCode: commitExitCode, stderr: commitStdError } = await gitSync.commitFiles(dir, gitUserName, email, commitMessage);
+    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, gitUserName, email, commitMessage);
     if (commitExitCode !== 0) {
       logWarn(`commit failed ${commitStdError}`, GitStep.CommitComplete);
     }
     logProgress(GitStep.CommitComplete);
   }
   logProgress(GitStep.PreparingUserInfo);
-  await credential.credentialOn(dir, remoteUrl, gitUserName, accessToken);
+  await credentialOn(dir, remoteUrl, gitUserName, accessToken);
   logProgress(GitStep.FetchingData);
   await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
   //
-  switch (await gitSync.getSyncState(dir, options.logger)) {
+  switch (await getSyncState(dir, options.logger)) {
     case 'noUpstream': {
-      await credential.credentialOff(dir);
-      throw new CantSyncGitNotInitializedError();
+      await credentialOff(dir);
+      throw new CantSyncGitNotInitializedError(dir);
     }
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
-      await credential.credentialOff(dir);
+      await credentialOff(dir);
       return;
     }
     case 'ahead': {
@@ -174,14 +178,10 @@ export async function commitAndSync(options: {
       logProgress(GitStep.LocalStateDivergeRebase);
       const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir);
       logProgress(GitStep.RebaseResultChecking);
-      if (
-        exitCode === 0 &&
-        (await gitSync.getGitRepositoryState(dir, options.logger)).length === 0 &&
-        (await gitSync.getSyncState(dir, options.logger)) === 'ahead'
-      ) {
+      if (exitCode === 0 && (await getGitRepositoryState(dir, options.logger)).length === 0 && (await getSyncState(dir, options.logger)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
       } else {
-        await gitSync.continueRebase(dir, gitUserName, email, options.logger);
+        await continueRebase(dir, gitUserName, email, options.logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
       await GitProcess.exec(['push', 'origin', branchMapping], dir);
@@ -191,9 +191,9 @@ export async function commitAndSync(options: {
       logProgress(GitStep.SyncFailedAlgorithmWrong);
     }
   }
-  await credential.credentialOff(dir);
+  await credentialOff(dir);
   logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-  await gitSync.assumeSync(dir, options.logger);
+  await assumeSync(dir, options.logger);
   logProgress(GitStep.SynchronizationFinish);
 }
 
@@ -246,11 +246,11 @@ export async function clone(options: {
   );
   await GitProcess.exec(['init'], dir);
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
-  await credential.credentialOn(dir, remoteUrl, gitUserName, accessToken);
+  await credentialOn(dir, remoteUrl, gitUserName, accessToken);
   logProgress(GitStep.StartFetchingFromGithubRemote);
-  const defaultBranchName = await gitSync.getDefaultBranchName(dir);
+  const defaultBranchName = await getDefaultBranchName(dir);
   const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`], dir);
-  await credential.credentialOff(dir);
+  await credentialOff(dir);
   if (exitCode !== 0) {
     throw new GitPullPushError(options, pullStdError);
   } else {

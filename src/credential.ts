@@ -8,23 +8,23 @@ const getGitUrlWithOutCredential = (urlWithCredential: string): string => trim(u
 
 /**
  *  Add remote with credential
- * @param {string} wikiFolderPath
- * @param {string} githubRepoUrl
+ * @param {string} dir
+ * @param {string} remoteUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-export async function credentialOn(wikiFolderPath: string, githubRepoUrl: string, userName: string, accessToken: string): Promise<void> {
-  const gitUrlWithCredential = getGitUrlWithCredential(githubRepoUrl, userName, accessToken);
-  await GitProcess.exec(['remote', 'add', 'origin', gitUrlWithCredential], wikiFolderPath);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithCredential], wikiFolderPath);
+export async function credentialOn(dir: string, remoteUrl: string, userName: string, accessToken: string): Promise<void> {
+  const gitUrlWithCredential = getGitUrlWithCredential(remoteUrl, userName, accessToken);
+  await GitProcess.exec(['remote', 'add', 'origin', gitUrlWithCredential], dir);
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithCredential], dir);
 }
 /**
  *  Add remote without credential
- * @param {string} wikiFolderPath
+ * @param {string} dir
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-export async function credentialOff(wikiFolderPath: string): Promise<void> {
-  const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
+export async function credentialOff(dir: string): Promise<void> {
+  const githubRepoUrl = await getRemoteUrl(dir);
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath);
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], dir);
 }
