@@ -19,7 +19,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const stdoutLines = stdout.split('\n');
   const nonEmptyLines = compact(stdoutLines);
-  const statusMatrixLines = (compact(nonEmptyLines.map((line) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+)$/.exec(line))).filter(
+  const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+)$/.exec(line))).filter(
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
   ) as unknown) as [unknown, string, string][];
   return statusMatrixLines.map(([_, type, fileRelativePath]) => ({
@@ -69,7 +69,7 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  return !!matchResult?.some((match) => Boolean(match));
+  return !!matchResult?.some((match: string) => Boolean(match));
 }
 
 /**

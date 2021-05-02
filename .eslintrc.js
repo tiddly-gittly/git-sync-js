@@ -1,9 +1,5 @@
 module.exports = {
   rules: {
-    'no-use-before-define': [
-      'error',
-      { ignoreTypeReferences: true, functions: false },
-    ],
     'unicorn/prevent-abbreviations': [
       'error',
       {
@@ -72,18 +68,7 @@ module.exports = {
     'prettier',
     'plugin:security-node/recommended',
   ],
-  plugins: [
-    '@typescript-eslint/eslint-plugin',
-    'prettier',
-    'react',
-    'html',
-    'react',
-    'unicorn',
-    'import',
-    'react-hooks',
-    'security',
-    'security-node',
-  ],
+  plugins: ['@typescript-eslint/eslint-plugin', 'prettier', 'react', 'html', 'react', 'unicorn', 'import', 'react-hooks', 'security', 'security-node'],
   parserOptions: {
     sourceType: 'module',
     ecmaVersion: 2018,
