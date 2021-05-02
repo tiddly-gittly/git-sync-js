@@ -4,6 +4,10 @@ JS implementation for [Git-Sync](https://github.com/simonthum/git-sync), a handy
 
 Used by [TiddlyGit-Desktop](https://github.com/tiddly-gittly/TiddlyGit-Desktop), refactor out to be a npm package.
 
+```shell
+npm i git-sync-js
+```
+
 ## Major Functions
 
 There are three major functions: `initGit, clone, commitAndSync```, but you may import other helper functions and Error types, and GitStep types:
