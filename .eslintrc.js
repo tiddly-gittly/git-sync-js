@@ -27,6 +27,7 @@ module.exports = {
         ignore: [/tsx$/],
       },
     ],
+    'unicorn/prefer-node-protocol': 'off',
     'unicorn/consistent-function-scoping': [0],
     'no-void': [0],
     'unicorn/prefer-ternary': 'off',
