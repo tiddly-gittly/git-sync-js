@@ -1,6 +1,6 @@
 {
   "name": "git-sync-js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "JS implementation for Git-Sync, a handy script that backup your notes in a git repo to the remote git services.",
   "homepage": "https://github.com/linonetwo/git-sync-js",
   "bugs": {
@@ -12,8 +12,8 @@
   },
   "license": "MIT",
   "author": "Lin Onetwo <linonetwo012@gmail.com> (https://github.com/linonetwo)",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist/"
   ],
