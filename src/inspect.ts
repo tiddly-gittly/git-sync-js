@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 import fs from 'fs-extra';
 import path from 'path';
 import { compact } from 'lodash';
@@ -193,7 +194,7 @@ async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
   if (stdout.startsWith('true')) {
     const { stdout: stdout2 } = await GitProcess.exec(['rev-parse', '--git-dir', dir], dir);
     const [gitPath2, gitPath1] = compact(stdout2.split('\n'));
-    if (gitPath2 && gitPath1) {
+    if (gitPath2 !== undefined && gitPath1 !== undefined) {
       return path.resolve(`${gitPath1}/${gitPath2}`);
     }
   }

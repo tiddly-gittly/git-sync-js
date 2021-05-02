@@ -26,42 +26,44 @@ export async function initGit(options: {
   userInfo?: IGitUserInfos;
   logger?: ILogger;
 }): Promise<void> {
+  const { dir, remoteUrl, userInfo, syncImmediately, logger } = options;
+
   const logProgress = (step: GitStep): unknown =>
-    options.logger?.info(step, {
+    logger?.info(step, {
       functionName: 'initGit',
       step,
     });
-  const logDebug = (message: string, step: GitStep): unknown => options.logger?.log(message, { functionName: 'initGit', step });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.log(message, { functionName: 'initGit', step });
 
   logProgress(GitStep.StartGitInitialization);
-  const { gitUserName, email } = options.userInfo ?? defaultGitInfo;
-  await GitProcess.exec(['init'], options.dir);
-  await commitFiles(options.dir, gitUserName, email);
+  const { gitUserName, email } = userInfo ?? defaultGitInfo;
+  await GitProcess.exec(['init'], dir);
+  await commitFiles(dir, gitUserName, email);
 
   // if we are config local note git, we are done here
-  if (options.syncImmediately !== true) {
+  if (syncImmediately !== true) {
     logProgress(GitStep.GitRepositoryConfigurationFinished);
     return;
   }
   // sync to remote, start config synced note
-  if (options.userInfo?.accessToken === undefined || options.userInfo?.accessToken?.length === 0) {
+  if (userInfo?.accessToken === undefined || userInfo?.accessToken?.length === 0) {
     throw new SyncParameterMissingError('accessToken');
   }
-  if (options.remoteUrl === undefined || options.remoteUrl.length === 0) {
+  if (remoteUrl === undefined || remoteUrl.length === 0) {
     throw new SyncParameterMissingError('remoteUrl');
   }
   logDebug(
-    `Using gitUrl ${options.remoteUrl} with gitUserName ${gitUserName} and accessToken ${truncate(options.userInfo?.accessToken, {
+    `Using gitUrl ${remoteUrl} with gitUserName ${gitUserName} and accessToken ${truncate(userInfo?.accessToken, {
       length: 24,
     })}`,
     GitStep.StartConfiguringGithubRemoteRepository,
   );
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
-  await credentialOn(options.dir, options.remoteUrl, gitUserName, options.userInfo?.accessToken);
+  await credentialOn(dir, remoteUrl, gitUserName, userInfo?.accessToken);
   logProgress(GitStep.StartBackupToGitRemote);
-  const defaultBranchName = await getDefaultBranchName(options.dir);
-  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', `${defaultBranchName}:${defaultBranchName}`], options.dir);
-  await credentialOff(options.dir);
+  const defaultBranchName = await getDefaultBranchName(dir);
+  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', `${defaultBranchName}:${defaultBranchName}`], dir);
+  await credentialOff(dir);
   if (pushExitCode !== 0) {
     logProgress(GitStep.GitPushFailed);
     throw new GitPullPushError(options, pushStdError);
@@ -84,9 +86,9 @@ export async function commitAndSync(options: {
   commitMessage?: string;
   logger?: ILogger;
 }): Promise<void> {
-  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync' } = options;
-  const { gitUserName, email } = options.userInfo ?? defaultGitInfo;
-  const { accessToken } = options.userInfo ?? {};
+  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger } = options;
+  const { gitUserName, email } = userInfo ?? defaultGitInfo;
+  const { accessToken } = userInfo ?? {};
 
   if (accessToken === '' || accessToken === undefined) {
     throw new SyncParameterMissingError('accessToken');
@@ -96,21 +98,21 @@ export async function commitAndSync(options: {
   }
 
   const logProgress = (step: GitStep): unknown =>
-    options.logger?.info(step, {
+    logger?.info(step, {
       functionName: 'commitAndSync',
       step,
       dir,
       remoteUrl,
     });
   const logDebug = (message: string, step: GitStep): unknown =>
-    options.logger?.log(message, {
+    logger?.log(message, {
       functionName: 'commitAndSync',
       step,
       dir,
       remoteUrl,
     });
   const logWarn = (message: string, step: GitStep): unknown =>
-    options.logger?.warn(message, {
+    logger?.warn(message, {
       functionName: 'commitAndSync',
       step,
       dir,
@@ -122,7 +124,7 @@ export async function commitAndSync(options: {
   const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
 
   // preflight check
-  const repoStartingState = await getGitRepositoryState(dir, options.logger);
+  const repoStartingState = await getGitRepositoryState(dir, logger);
   if (repoStartingState.length > 0 || repoStartingState === '|DIRTY') {
     logProgress(GitStep.PrepareSync);
     logDebug(`${dir} , ${gitUserName} <${email}>`, GitStep.PrepareSync);
@@ -130,7 +132,7 @@ export async function commitAndSync(options: {
     throw new CantSyncGitNotInitializedError(dir);
   } else {
     // we may be in middle of a rebase, try fix that
-    await continueRebase(dir, gitUserName, email, options.logger);
+    await continueRebase(dir, gitUserName, email, logger);
   }
   if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
@@ -146,7 +148,7 @@ export async function commitAndSync(options: {
   logProgress(GitStep.FetchingData);
   await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
   //
-  switch (await getSyncState(dir, options.logger)) {
+  switch (await getSyncState(dir, logger)) {
     case 'noUpstream': {
       await credentialOff(dir);
       throw new CantSyncGitNotInitializedError(dir);
@@ -178,10 +180,10 @@ export async function commitAndSync(options: {
       logProgress(GitStep.LocalStateDivergeRebase);
       const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir);
       logProgress(GitStep.RebaseResultChecking);
-      if (exitCode === 0 && (await getGitRepositoryState(dir, options.logger)).length === 0 && (await getSyncState(dir, options.logger)) === 'ahead') {
+      if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, logger)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
       } else {
-        await continueRebase(dir, gitUserName, email, options.logger);
+        await continueRebase(dir, gitUserName, email, logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
       await GitProcess.exec(['push', 'origin', branchMapping], dir);
@@ -193,7 +195,7 @@ export async function commitAndSync(options: {
   }
   await credentialOff(dir);
   logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-  await assumeSync(dir, options.logger);
+  await assumeSync(dir, logger);
   logProgress(GitStep.SynchronizationFinish);
 }
 
@@ -206,9 +208,9 @@ export async function clone(options: {
   userInfo?: IGitUserInfos;
   logger?: ILogger;
 }): Promise<void> {
-  const { dir, remoteUrl } = options;
-  const { gitUserName } = options.userInfo ?? defaultGitInfo;
-  const { accessToken } = options.userInfo ?? {};
+  const { dir, remoteUrl, userInfo, logger } = options;
+  const { gitUserName } = userInfo ?? defaultGitInfo;
+  const { accessToken } = userInfo ?? {};
 
   if (accessToken === '' || accessToken === undefined) {
     throw new SyncParameterMissingError('accessToken');
@@ -218,14 +220,14 @@ export async function clone(options: {
   }
 
   const logProgress = (step: GitStep): unknown =>
-    options.logger?.info(step, {
+    logger?.info(step, {
       functionName: 'commitAndSync',
       step,
       dir,
       remoteUrl,
     });
   const logDebug = (message: string, step: GitStep): unknown =>
-    options.logger?.log(message, {
+    logger?.log(message, {
       functionName: 'commitAndSync',
       step,
       dir,

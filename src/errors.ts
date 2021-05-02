@@ -45,10 +45,10 @@ export class GitPullPushError extends Error {
 }
 
 export class CantSyncGitNotInitializedError extends Error {
-  constructor(dir: string) {
-    super(dir);
+  constructor(directory: string) {
+    super(directory);
     this.name = 'CantSyncGitNotInitializedError';
-    this.message = `E-4 we can't sync on a git repository that is not initialized, maybe this folder is not a git repository. ${dir}`;
+    this.message = `E-4 we can't sync on a git repository that is not initialized, maybe this folder is not a git repository. ${directory}`;
   }
 }
 

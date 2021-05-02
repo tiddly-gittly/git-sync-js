@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 import { GitProcess, IGitResult } from 'dugite';
 import { CantSyncInSpecialGitStateAutoFixFailed, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
