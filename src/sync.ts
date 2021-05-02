@@ -1,33 +1,30 @@
-import { GitProcess, IGitResult } from 'dugite';
+import fs from 'fs-extra';
+import git from 'isomorphic-git';
 import { CantSyncInSpecialGitStateAutoFixFailed, SyncScriptIsInDeadLoopError } from './errors';
-import { getGitRepositoryState } from './inspect';
+import { getGitRepositoryState, getModifiedFileList } from './inspect';
 import { GitStep, ILogger } from './interface';
 
 /**
  * Git add and commit all file
+ * https://github.com/isomorphic-git/isomorphic-git/issues/1182#issuecomment-830756782
  * @param dir
- * @param username
+ * @param name
  * @param email
  * @param message
  */
-export async function commitFiles(
-  dir: string,
-  username: string,
-  email: string,
-  message = 'Initialize with TiddlyGit-Desktop',
-  logger?: ILogger,
-): Promise<IGitResult> {
-  const logProgress = (step: GitStep): unknown =>
-    logger?.info(step, {
-      functionName: 'commitFiles',
-      step,
-      dir,
-    });
-
-  logProgress(GitStep.AddingFiles);
-  await GitProcess.exec(['add', '.'], dir);
-  logProgress(GitStep.AddComplete);
-  return await GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir);
+export async function commitAllFiles(dir: string, name: string, email: string, message = 'Initialize with Git-Sync-JS'): Promise<string> {
+  const unstagedFilePaths = await getModifiedFileList(dir);
+  await Promise.all(unstagedFilePaths.map(({ filepath }) => git.add({ fs, dir, filepath })));
+  const sha = await git.commit({
+    fs,
+    dir: '/tutorial',
+    author: {
+      name,
+      email,
+    },
+    message,
+  });
+  return sha;
 }
 
 /**
@@ -55,7 +52,7 @@ export async function continueRebase(dir: string, username: string, email: strin
     if (loopCount > 1000) {
       throw new SyncScriptIsInDeadLoopError();
     }
-    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, username, email, 'Conflict files committed with TiddlyGit-Desktop');
+    const { exitCode: commitExitCode, stderr: commitStdError } = await commitAllFiles(dir, username, email, 'Conflict files committed with TiddlyGit-Desktop');
     const rebaseContinueResult = await GitProcess.exec(['rebase', '--continue'], dir);
     // get info for logging
     rebaseContinueExitCode = rebaseContinueResult.exitCode;

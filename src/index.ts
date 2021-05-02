@@ -1,12 +1,12 @@
 import { truncate } from 'lodash';
-import { GitProcess } from 'dugite';
+import git from 'isomorphic-git';
 
 import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
 import { credentialOn, credentialOff } from './credential';
 import { getDefaultBranchName, getGitRepositoryState, haveLocalChanges, getSyncState, assumeSync } from './inspect';
-import { commitFiles, continueRebase } from './sync';
+import { commitAllFiles, continueRebase } from './sync';
 
 export * from './interface';
 export * from './defaultGitInfo';
@@ -36,7 +36,7 @@ export async function initGit(options: {
   logProgress(GitStep.StartGitInitialization);
   const { gitUserName, email } = options.userInfo ?? defaultGitInfo;
   await GitProcess.exec(['init'], options.dir);
-  await commitFiles(options.dir, gitUserName, email);
+  await commitAllFiles(options.dir, gitUserName, email);
 
   // if we are config local note git, we are done here
   if (options.syncImmediately !== true) {
@@ -135,7 +135,7 @@ export async function commitAndSync(options: {
   if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
     logDebug(commitMessage, GitStep.HaveThingsToCommit);
-    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, gitUserName, email, commitMessage);
+    const { exitCode: commitExitCode, stderr: commitStdError } = await commitAllFiles(dir, gitUserName, email, commitMessage);
     if (commitExitCode !== 0) {
       logWarn(`commit failed ${commitStdError}`, GitStep.CommitComplete);
     }

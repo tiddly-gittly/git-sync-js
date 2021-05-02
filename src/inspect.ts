@@ -1,45 +1,38 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { compact } from 'lodash';
-import { GitProcess } from 'dugite';
+import git from 'isomorphic-git';
 import url from 'url';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
 
 export interface ModifiedFileList {
-  type: string;
   fileRelativePath: string;
-  filePath: string;
+  filepath: string;
 }
 /**
- * Get modified files and modify type in a folder
- * @param {string} wikiFolderPath location to scan git modify state
+ * Get modified files and modify type in a folder. We assume that unstaged files are modified files (no one else runs `git add xxx`)
+ * @param {string} dir location to scan git modify state
  */
-export async function getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
-  const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
-  const stdoutLines = stdout.split('\n');
-  const nonEmptyLines = compact(stdoutLines);
-  const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+)$/.exec(line))).filter(
-    ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
-  ) as unknown) as [unknown, string, string][];
-  return statusMatrixLines.map(([_, type, fileRelativePath]) => ({
-    type,
+export async function getModifiedFileList(dir: string): Promise<ModifiedFileList[]> {
+  const unstagedFileRelativePaths = (await git.statusMatrix({ dir, fs })).filter((row) => row[2] !== row[3]).map((row) => row[0]);
+  return unstagedFileRelativePaths.map((fileRelativePath) => ({
     fileRelativePath,
-    filePath: path.join(wikiFolderPath, fileRelativePath),
+    filepath: path.join(dir, fileRelativePath),
   }));
 }
 
 /**
  * Inspect git's remote url from folder's .git config
- * @param wikiFolderPath git folder to inspect
+ * @param dir git folder to inspect
  * @returns remote url
  */
-export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
-  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], wikiFolderPath);
+export async function getRemoteUrl(dir: string): Promise<string> {
+  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], dir);
   const remotes = compact(remoteStdout.split('\n'));
   const githubRemote = remotes.find((remote) => remote === 'origin') ?? remotes[0] ?? '';
   if (githubRemote.length > 0) {
-    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], wikiFolderPath);
+    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], dir);
     return remoteUrlStdout.replace('.git', '');
   }
   return '';
@@ -53,6 +46,7 @@ export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
 export async function getRemoteRepoName(remoteUrl: string): Promise<string | undefined> {
   let wikiRepoName = new url.URL(remoteUrl).pathname;
   if (wikiRepoName.startsWith('/')) {
+    // deepcode ignore GlobalReplacementRegex: will change only the first match
     wikiRepoName = wikiRepoName.replace('/', '');
   }
   if (wikiRepoName.length > 0) {
@@ -73,18 +67,12 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
 }
 
 /**
- * Get "master" or "main" from git repo
- * @param wikiFolderPath
+ * Get "master" or "main" from git repo, we assume it is the head branch
+ * @param dir
  */
-export async function getDefaultBranchName(wikiFolderPath: string): Promise<string> {
-  const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
-  const lines = stdout.split('\n');
-  const lineWithHEAD = lines.find((line: string) => line.includes('HEAD branch: '));
-  const branchName = lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
-  if (branchName === undefined || branchName.includes('(unknown)')) {
-    return 'master';
-  }
-  return branchName;
+export async function getDefaultBranchName(dir: string): Promise<string> {
+  const branchName = (await git.currentBranch({ dir, fs })) ?? (await git.listBranches({ dir, fs }))[0];
+  return branchName || 'master';
 }
 
 export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged';
