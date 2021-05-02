@@ -31,6 +31,8 @@ You can see [TiddlyGit Desktop's usage](https://github.com/tiddly-gittly/TiddlyG
 
 ### initGit
 
+Initialize a new `.git` on a folder. If set `syncImmediately` to `true`, it will push local git to remote immediately after init, you should provide `userInfo.accessToken` and `remoteUrl`, otherwise they are optional.
+
 ```ts
 try {
   await initGit({
@@ -53,6 +55,8 @@ try {
 
 ### commitAndSync
 
+Core feature of git-sync, commit all unstaged files, and try rebase on remote, and push to the remote.
+
 ```ts
 try {
   await commitAndSync({
@@ -73,6 +77,8 @@ try {
 ```
 
 ### clone
+
+Clone a remote repo to a local location.
 
 ```ts
 try {
