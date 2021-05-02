@@ -23,19 +23,21 @@ export async function getModifiedFileList(dir: string): Promise<ModifiedFileList
 }
 
 /**
+ * See if there is any file not being committed
+ * @param {string} dir repo path to test
+ */
+export async function haveLocalChanges(dir: string): Promise<boolean> {
+  return (await getModifiedFileList(dir)).length === 0;
+}
+
+/**
  * Inspect git's remote url from folder's .git config
  * @param dir git folder to inspect
  * @returns remote url
  */
-export async function getRemoteUrl(dir: string): Promise<string> {
-  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], dir);
-  const remotes = compact(remoteStdout.split('\n'));
-  const githubRemote = remotes.find((remote) => remote === 'origin') ?? remotes[0] ?? '';
-  if (githubRemote.length > 0) {
-    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], dir);
-    return remoteUrlStdout.replace('.git', '');
-  }
-  return '';
+export async function getRemoteUrl(dir: string): Promise<string | undefined> {
+  const remotes = await git.listRemotes({ fs, dir });
+  return remotes.find(({ remote }) => remote === 'origin')?.url ?? remotes[0]?.url;
 }
 
 /**
@@ -53,17 +55,6 @@ export async function getRemoteRepoName(remoteUrl: string): Promise<string | und
     return wikiRepoName;
   }
   return;
-}
-
-/**
- * See if there is any file not being committed
- * @param {string} wikiFolderPath repo path to test
- */
-export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean> {
-  const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
-  const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  return !!matchResult?.some((match: string) => Boolean(match));
 }
 
 /**

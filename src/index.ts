@@ -1,4 +1,5 @@
 import { truncate } from 'lodash';
+import fs from 'fs-extra';
 import git from 'isomorphic-git';
 
 import { GitStep, IGitUserInfos, ILogger } from './interface';
