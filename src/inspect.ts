@@ -190,6 +190,7 @@ export async function getGitDirectory(dir: string, logger?: ILogger): Promise<st
   const { stdout, stderr } = await GitProcess.exec(['rev-parse', '--is-inside-work-tree', dir], dir);
   if (typeof stderr === 'string' && stderr.length > 0) {
     logDebug(stderr, GitStep.CheckingLocalGitRepoSanity);
+    throw new CantSyncGitNotInitializedError(dir);
   }
   if (stdout.startsWith('true')) {
     const { stdout: stdout2 } = await GitProcess.exec(['rev-parse', '--git-dir', dir], dir);
@@ -205,8 +206,10 @@ export async function getGitDirectory(dir: string, logger?: ILogger): Promise<st
 export async function hasGit(dir: string): Promise<boolean> {
   try {
     await getGitDirectory(dir);
-    return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof CantSyncGitNotInitializedError) {
+      return false;
+    }
   }
+  return true;
 }

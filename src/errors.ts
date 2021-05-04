@@ -1,9 +1,14 @@
+/**
+ * Custom errors, for user to catch and `instanceof`. So you can show your custom translated message for each error type.
+ * `Object.setPrototypeOf(this, AssumeSyncError.prototype);` to fix https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+ */
 import { truncate } from 'lodash';
 import { IGitUserInfos, IGitUserInfosWithoutToken } from './interface';
 
 export class AssumeSyncError extends Error {
   constructor(extraMessage?: string) {
     super(extraMessage);
+    Object.setPrototypeOf(this, AssumeSyncError.prototype);
     this.name = 'AssumeSyncError';
     this.message = `E-1 In this state, git should have been sync with the remote, but it is not, this is caused by procedural bug in the git-sync-js. ${
       extraMessage ?? ''
@@ -15,6 +20,7 @@ export class SyncParameterMissingError extends Error {
   parameterName: string;
   constructor(parameterName = 'accessToken') {
     super(parameterName);
+    Object.setPrototypeOf(this, SyncParameterMissingError.prototype);
     this.name = 'SyncParameterMissingError';
     this.parameterName = parameterName;
     this.message = `E-2 We need ${parameterName} to sync to the cloud, you should pass ${parameterName} as parameters in userInfo.`;
@@ -34,6 +40,7 @@ export class GitPullPushError extends Error {
     extraMessages: string,
   ) {
     super(extraMessages);
+    Object.setPrototypeOf(this, GitPullPushError.prototype);
     this.name = 'GitPullPushError';
     this.message = `E-3 failed to config git to successfully pull from or push to remote with configuration ${JSON.stringify({
       ...configuration,
@@ -52,6 +59,7 @@ export class CantSyncGitNotInitializedError extends Error {
   directory: string;
   constructor(directory: string) {
     super(directory);
+    Object.setPrototypeOf(this, CantSyncGitNotInitializedError.prototype);
     this.directory = directory;
     this.name = 'CantSyncGitNotInitializedError';
     this.message = `E-4 we can't sync on a git repository that is not initialized, maybe this folder is not a git repository. ${directory}`;
@@ -61,6 +69,7 @@ export class CantSyncGitNotInitializedError extends Error {
 export class SyncScriptIsInDeadLoopError extends Error {
   constructor() {
     super();
+    Object.setPrototypeOf(this, SyncScriptIsInDeadLoopError.prototype);
     this.name = 'SyncScriptIsInDeadLoopError';
     this.message = `E-5 Unable to sync, and Sync script is in a dead loop, this is caused by procedural bug in the git-sync-js.`;
   }
@@ -70,6 +79,7 @@ export class CantSyncInSpecialGitStateAutoFixFailed extends Error {
   stateMessage: string;
   constructor(stateMessage: string) {
     super(stateMessage);
+    Object.setPrototypeOf(this, CantSyncInSpecialGitStateAutoFixFailed.prototype);
     this.stateMessage = stateMessage;
     this.name = 'CantSyncInSpecialGitStateAutoFixFailed';
     this.message = `E-6 Unable to Sync, this folder is in special condition, thus can't Sync directly. An auto-fix has been tried, but error still remains. Please resolve all the conflict manually (For example, use VSCode to open the wiki folder), if this still don't work out, please use professional Git tools (Source Tree, GitKraken) to solve this. This is caused by procedural bug in the git-sync-js.\n${stateMessage}`;
