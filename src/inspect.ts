@@ -177,7 +177,7 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
  * echo the git dir
  * @param dir repo path
  */
-async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
+export async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
   const logDebug = (message: string, step: GitStep): unknown => logger?.log(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
@@ -199,4 +199,14 @@ async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
     }
   }
   throw new CantSyncGitNotInitializedError(dir);
+}
+
+/** Check if dir has `.git`. */
+export async function hasGit(dir: string): Promise<boolean> {
+  try {
+    await getGitDirectory(dir);
+    return true;
+  } catch {
+    return false;
+  }
 }

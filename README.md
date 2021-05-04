@@ -123,6 +123,10 @@ try {
 
 ### getGitDirectory
 
+### hasGit
+
+Check if dir has `.git`.
+
 ## Sync helpers
 
 ### commitFiles
