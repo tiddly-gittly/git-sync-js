@@ -2,7 +2,7 @@ import { truncate } from 'lodash';
 import { GitProcess } from 'dugite';
 
 import { GitStep, IGitUserInfos, IGitUserInfosWithoutToken, ILogger } from './interface';
-import { defaultGitInfo } from './defaultGitInfo';
+import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
 import { credentialOn, credentialOff } from './credential';
 import { getDefaultBranchName, getGitRepositoryState, haveLocalChanges, getSyncState, assumeSync } from './inspect';
@@ -25,8 +25,9 @@ export async function initGit(options: {
   /** user info used in the commit message */
   userInfo?: IGitUserInfosWithoutToken | IGitUserInfos;
   logger?: ILogger;
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
 }): Promise<void> {
-  const { dir, remoteUrl, userInfo, syncImmediately, logger } = options;
+  const { dir, remoteUrl, userInfo, syncImmediately, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
 
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
@@ -38,7 +39,7 @@ export async function initGit(options: {
   logProgress(GitStep.StartGitInitialization);
   const { gitUserName, email } = userInfo ?? defaultGitInfo;
   await GitProcess.exec(['init'], dir);
-  await commitFiles(dir, gitUserName, email);
+  await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email);
 
   // if we are config local note git, we are done here
   if (syncImmediately !== true) {
@@ -85,8 +86,9 @@ export async function commitAndSync(options: {
   /** the commit message */
   commitMessage?: string;
   logger?: ILogger;
+  defaultGitInfo: typeof defaultDefaultGitInfo;
 }): Promise<void> {
-  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger } = options;
+  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
   const { gitUserName, email } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
 
@@ -127,17 +129,17 @@ export async function commitAndSync(options: {
   const repoStartingState = await getGitRepositoryState(dir, logger);
   if (repoStartingState.length > 0 || repoStartingState === '|DIRTY') {
     logProgress(GitStep.PrepareSync);
-    logDebug(`${dir} , ${gitUserName} <${email}>`, GitStep.PrepareSync);
+    logDebug(`${dir} , ${gitUserName} <${email ?? defaultGitInfo.email}>`, GitStep.PrepareSync);
   } else if (repoStartingState === 'NOGIT') {
     throw new CantSyncGitNotInitializedError(dir);
   } else {
     // we may be in middle of a rebase, try fix that
-    await continueRebase(dir, gitUserName, email, logger);
+    await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
   }
   if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
     logDebug(commitMessage, GitStep.HaveThingsToCommit);
-    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, gitUserName, email, commitMessage);
+    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email, commitMessage);
     if (commitExitCode !== 0) {
       logWarn(`commit failed ${commitStdError}`, GitStep.CommitComplete);
     }
@@ -183,7 +185,7 @@ export async function commitAndSync(options: {
       if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, logger)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
       } else {
-        await continueRebase(dir, gitUserName, email, logger);
+        await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
       await GitProcess.exec(['push', 'origin', branchMapping], dir);
@@ -207,8 +209,9 @@ export async function clone(options: {
   /** user info used in the commit message */
   userInfo?: IGitUserInfos;
   logger?: ILogger;
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
 }): Promise<void> {
-  const { dir, remoteUrl, userInfo, logger } = options;
+  const { dir, remoteUrl, userInfo, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
   const { gitUserName } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
 
