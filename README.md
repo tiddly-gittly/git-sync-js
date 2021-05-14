@@ -10,7 +10,7 @@ npm i git-sync-js
 
 ## Major Functions
 
-There are three major functions: `initGit, clone, commitAndSync```, but you may import other helper functions and Error types, and GitStep types:
+There are three major functions: `initGit, clone, commitAndSync`, but you may import other helper functions and Error types, and GitStep types:
 
 ```ts
 import {
@@ -107,7 +107,23 @@ try {
 
 ### getModifiedFileList
 
+Get modified files and modify type in a folder
+
+```ts
+await getModifiedFileList(wikiFolderPath)
+```
+
 ### getRemoteUrl
+
+Inspect git's remote url from folder's .git config
+
+```ts
+export async function credentialOff(directory: string): Promise<void> {
+  const githubRepoUrl = await getRemoteUrl(directory);
+  const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
+}
+```
 
 ### getRemoteRepoName
 
