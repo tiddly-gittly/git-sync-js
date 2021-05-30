@@ -31,7 +31,7 @@ import {
 } from 'git-sync-js';
 ```
 
-You can see [TiddlyGit Desktop's usage](https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/c2d4fad4e103125616eab0dd85f20d0658d70417/src/services/git/index.ts) for full example.
+You can see [TiddlyGit Desktop's usage](https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/37fd560badd7a63cced8ece7c68d6d384b6612a0/src/services/git/index.ts) for full example.
 
 ### initGit
 
@@ -127,7 +127,16 @@ export async function credentialOff(directory: string): Promise<void> {
 
 ### getRemoteRepoName
 
+get the Github Repo Name, which is similar to "linonetwo/wiki", that is the string after "https://github.com/", so we basically just get the pathname of URL.
+
 ### haveLocalChanges
+
+See if there is any file not being committed
+
+```ts
+if (await haveLocalChanges(dir)) {
+  // ... do commit and push
+```
 
 ### getDefaultBranchName
 
