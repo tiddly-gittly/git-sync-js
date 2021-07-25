@@ -71,7 +71,7 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  return !!matchResult?.some((match: string) => Boolean(match));
+  return !!matchResult?.some?.((match: string) => Boolean(match));
 }
 
 /**
@@ -82,7 +82,7 @@ export async function getDefaultBranchName(wikiFolderPath: string): Promise<stri
   const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
   const lines = stdout.split('\n');
   const lineWithHEAD = lines.find((line: string) => line.includes('HEAD branch: '));
-  const branchName = lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
+  const branchName = lineWithHEAD?.replace?.('HEAD branch: ', '')?.replace?.(/\s/g, '');
   if (branchName === undefined || branchName.includes('(unknown)')) {
     return 'master';
   }
@@ -96,9 +96,9 @@ export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged'
  * @param dir repo path to test
  */
 export async function getSyncState(dir: string, logger?: ILogger): Promise<SyncState> {
-  const logDebug = (message: string, step: GitStep): unknown => logger?.log(message, { functionName: 'getSyncState', step, dir });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.log?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
-    logger?.info(step, {
+    logger?.info?.(step, {
       functionName: 'getSyncState',
       step,
       dir,
@@ -143,21 +143,21 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
     return 'NOGIT';
   }
   let result = '';
-  if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile()) {
+  if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
     result += 'REBASE-i';
-  } else if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory()) {
+  } else if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory?.()) {
     result += 'REBASE-m';
   } else {
-    if (((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory?.()) {
       result += 'AM/REBASE';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
       result += 'MERGING';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
       result += 'CHERRY-PICKING';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
       result += 'BISECTING';
     }
   }
@@ -178,9 +178,9 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
  * @param dir repo path
  */
 export async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
-  const logDebug = (message: string, step: GitStep): unknown => logger?.log(message, { functionName: 'getSyncState', step, dir });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.log?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
-    logger?.info(step, {
+    logger?.info?.(step, {
       functionName: 'getSyncState',
       step,
       dir,
