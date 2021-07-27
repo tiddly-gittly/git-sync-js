@@ -36,8 +36,9 @@ export async function commitFiles(
  * @param dir
  * @param username
  * @param email
+ * @param providedRepositoryState result of `await getGitRepositoryState(dir, logger)`, optional, if not provided, we will run `await getGitRepositoryState(dir, logger)` by ourself.
  */
-export async function continueRebase(dir: string, username: string, email: string, logger?: ILogger): Promise<void> {
+export async function continueRebase(dir: string, username: string, email: string, logger?: ILogger, providedRepositoryState?: string): Promise<void> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'continueRebase',
@@ -48,7 +49,7 @@ export async function continueRebase(dir: string, username: string, email: strin
   let hasNotCommittedConflict = true;
   let rebaseContinueExitCode = 0;
   let rebaseContinueStdError = '';
-  let repositoryState = await getGitRepositoryState(dir, logger);
+  let repositoryState: string = providedRepositoryState ?? (await getGitRepositoryState(dir, logger));
   // prevent infin loop, if there is some bug that I miss
   let loopCount = 0;
   while (hasNotCommittedConflict) {

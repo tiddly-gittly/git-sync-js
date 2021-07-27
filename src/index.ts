@@ -134,7 +134,7 @@ export async function commitAndSync(options: {
     throw new CantSyncGitNotInitializedError(dir);
   } else {
     // we may be in middle of a rebase, try fix that
-    await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
+    await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger, repoStartingState);
   }
   if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
