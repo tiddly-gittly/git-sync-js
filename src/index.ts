@@ -127,7 +127,7 @@ export async function commitAndSync(options: {
 
   // preflight check
   const repoStartingState = await getGitRepositoryState(dir, logger);
-  if (repoStartingState.length > 0 || repoStartingState === '|DIRTY') {
+  if (repoStartingState.length === 0 || repoStartingState === '|DIRTY') {
     logProgress(GitStep.PrepareSync);
     logDebug(`${dir} , ${gitUserName} <${email ?? defaultGitInfo.email}>`, GitStep.PrepareSync);
   } else if (repoStartingState === 'NOGIT') {
