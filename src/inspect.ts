@@ -4,8 +4,11 @@ import path from 'path';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
 import url from 'url';
+import { VM } from 'vm2';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
+
+const vm2 = new VM();
 
 export interface ModifiedFileList {
   type: string;
@@ -29,7 +32,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
      * ```js
      * fileRelativePath: "\"tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid\""`
      * ```
-     * which is actually `'tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid'` (if you try to type it in the console manually). If you console log it, it will become
+     * which is actually `"tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid"` (if you try to type it in the console manually). If you console log it, it will become
      * ```js
      * > temp1[1].fileRelativePath
      * '"tiddlers/\346\226\260\346\235\241\347\233\256.tid"'
@@ -40,8 +43,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
      */
     const isSafeUtf8UnescapedString =
       rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') && !rawFileRelativePath.includes(',');
-    // eslint-disable-next-line security/detect-eval-with-expression, no-eval
-    const fileRelativePath = isSafeUtf8UnescapedString ? decodeURIComponent(escape(eval(rawFileRelativePath))) : rawFileRelativePath;
+    const fileRelativePath = isSafeUtf8UnescapedString ? decodeURIComponent(escape(vm2.run(rawFileRelativePath))) : rawFileRelativePath;
     return {
       type,
       fileRelativePath,
