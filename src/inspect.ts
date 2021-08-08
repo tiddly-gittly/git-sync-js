@@ -4,11 +4,8 @@ import path from 'path';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
 import url from 'url';
-import { VM } from 'vm2';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
-
-const vm2 = new VM();
 
 export interface ModifiedFileList {
   type: string;
@@ -43,7 +40,12 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
      */
     const isSafeUtf8UnescapedString =
       rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') && !rawFileRelativePath.includes(',');
-    const fileRelativePath = isSafeUtf8UnescapedString ? decodeURIComponent(escape(vm2.run(rawFileRelativePath))) : rawFileRelativePath;
+    function decode(str: string): string {
+      return str.replace(/\\(\d{3})\\(\d{3})\\(\d{3})/g, (_: unknown, $1: string, $2: string, $3: string) =>
+        decodeURIComponent(`%${Number.parseInt($1, 8).toString(16)}%${Number.parseInt($2, 8).toString(16)}%${Number.parseInt($3, 8).toString(16)}`),
+      );
+    }
+    const fileRelativePath = isSafeUtf8UnescapedString ? decode(rawFileRelativePath).replace(/^"/, '').replace(/"$/, '') : rawFileRelativePath;
     return {
       type,
       fileRelativePath,

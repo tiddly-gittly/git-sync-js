@@ -30,8 +30,7 @@
   "dependencies": {
     "dugite": "^1.103.0",
     "fs-extra": "^9.1.0",
-    "lodash": "^4.17.21",
-    "vm2": "^3.9.3"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.11",
