@@ -23,7 +23,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const stdoutLines = stdout.split('\n');
   const nonEmptyLines = compact(stdoutLines);
-  const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+)$/.exec(line))).filter(
+  const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+.*\S+)$/.exec(line))).filter(
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
   ) as unknown) as Array<[unknown, string, string]>;
   return statusMatrixLines.map(([_, type, rawFileRelativePath]) => {
