@@ -23,11 +23,14 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
   const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+)$/.exec(line))).filter(
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
   ) as unknown) as Array<[unknown, string, string]>;
-  return statusMatrixLines.map(([_, type, fileRelativePath]) => ({
-    type,
-    fileRelativePath,
-    filePath: path.join(wikiFolderPath, fileRelativePath),
-  }));
+  return statusMatrixLines.map(([_, type, rawFileRelativePath]) => {
+    const fileRelativePath = decodeURIComponent(escape(rawFileRelativePath));
+    return {
+      type,
+      fileRelativePath,
+      filePath: path.join(wikiFolderPath, fileRelativePath),
+    };
+  });
 }
 
 /**
