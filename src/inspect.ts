@@ -24,7 +24,24 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
   ) as unknown) as Array<[unknown, string, string]>;
   return statusMatrixLines.map(([_, type, rawFileRelativePath]) => {
-    const fileRelativePath = decodeURIComponent(escape(rawFileRelativePath));
+    /**
+     * If filename contains Chinese, it will becomes:
+     * ```js
+     * fileRelativePath: "\"tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid\""`
+     * ```
+     * which is actually `'tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid'` (if you try to type it in the console manually). If you console log it, it will become
+     * ```js
+     * > temp1[1].fileRelativePath
+     * '"tiddlers/\346\226\260\346\235\241\347\233\256.tid"'
+     * ```
+     *
+     * So simply `decodeURIComponent(escape` will work on `tiddlers/\346\226\260\346\235\241\347\233\256.tid` (the logged string), but not on `tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid` (the actual string).
+     * So how to transform actual string to logged string? Answer is `eval()` it. But we have to check is there any evil script use `;` or `,` mixed into the filename.
+     */
+    const isSafeUtf8UnescapedString =
+      rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') && !rawFileRelativePath.includes(',');
+    // eslint-disable-next-line security/detect-eval-with-expression, no-eval
+    const fileRelativePath = isSafeUtf8UnescapedString ? decodeURIComponent(escape(eval(rawFileRelativePath))) : rawFileRelativePath;
     return {
       type,
       fileRelativePath,
