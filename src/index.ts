@@ -1,5 +1,8 @@
 import { truncate } from 'lodash';
 import { GitProcess } from 'dugite';
+import fs from 'fs-extra';
+import git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
 
 import { GitStep, IGitUserInfos, IGitUserInfosWithoutToken, ILogger } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
@@ -148,7 +151,17 @@ export async function commitAndSync(options: {
   logProgress(GitStep.PreparingUserInfo);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken);
   logProgress(GitStep.FetchingData);
-  await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
+  await git.fetch({
+    fs,
+    http,
+    dir,
+    url: remoteUrl,
+    ref: defaultBranchName,
+    // TODO: allow config this, so git history plugin for tiddlywiki can work
+    depth: 1,
+    singleBranch: true,
+    tags: false,
+  });
   //
   switch (await getSyncState(dir, logger)) {
     case 'noUpstream': {
@@ -162,11 +175,17 @@ export async function commitAndSync(options: {
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);
-      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], dir);
-      if (exitCode === 0) {
+      const { ok, error } = await git.push({
+        fs,
+        http,
+        dir,
+        remote: 'origin',
+        ref: defaultBranchName,
+      });
+      if (ok) {
         break;
       }
-      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.GitPushFailed);
+      logWarn(` stderr of git push: ${error ?? ''}`, GitStep.GitPushFailed);
       break;
     }
     case 'behind': {
@@ -188,7 +207,17 @@ export async function commitAndSync(options: {
         await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
-      await GitProcess.exec(['push', 'origin', branchMapping], dir);
+      const { ok, error } = await git.push({
+        fs,
+        http,
+        dir,
+        remote: 'origin',
+        ref: defaultBranchName,
+      });
+      if (ok) {
+        break;
+      }
+      logWarn(` stderr of git push in diverged: ${error ?? ''}`, GitStep.GitPushFailed);
       break;
     }
     default: {

@@ -3,6 +3,8 @@ import fs from 'fs-extra';
 import path from 'path';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
+import git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
 import url from 'url';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
@@ -56,16 +58,14 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
 
 /**
  * Inspect git's remote url from folder's .git config
- * @param wikiFolderPath git folder to inspect
- * @returns remote url
+ * @param dir wiki folder path, git folder to inspect
+ * @returns remote url, without `'.git'`
  */
-export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
-  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], wikiFolderPath);
-  const remotes = compact(remoteStdout.split('\n'));
-  const githubRemote = remotes.find((remote) => remote === 'origin') ?? remotes[0] ?? '';
-  if (githubRemote.length > 0) {
-    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], wikiFolderPath);
-    return remoteUrlStdout.replace('.git', '');
+export async function getRemoteUrl(dir: string): Promise<string> {
+  const remotes = await git.listRemotes({ fs, dir });
+  const githubRemote = remotes.find(({ remote }) => remote === 'origin') ?? remotes[0];
+  if ((githubRemote?.url?.length ?? 0) > 0) {
+    return githubRemote!.url.replace('.git', '');
   }
   return '';
 }
@@ -103,14 +103,19 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
  * @param wikiFolderPath
  */
 export async function getDefaultBranchName(wikiFolderPath: string): Promise<string> {
-  const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
-  const lines = stdout.split('\n');
-  const lineWithHEAD = lines.find((line: string) => line.includes('HEAD branch: '));
-  const branchName = lineWithHEAD?.replace?.('HEAD branch: ', '')?.replace?.(/\s/g, '');
-  if (branchName === undefined || branchName.includes('(unknown)')) {
-    return 'master';
+  const fallbackName = 'master';
+  const remoteUrl = await getRemoteUrl(wikiFolderPath);
+  if (remoteUrl.length > 0) {
+    try {
+      const remoteInfo = await git.getRemoteInfo({ http, url: remoteUrl });
+      // remoteInfo looks like {HEAD: 'refs/heads/master',...}
+      const headName = remoteInfo.HEAD?.replace('refs/heads/', '');
+      return headName ?? fallbackName;
+    } catch {
+      // in case http error, we return fallbackName
+    }
   }
-  return branchName;
+  return fallbackName;
 }
 
 export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged';
