@@ -60,3 +60,7 @@ export enum GitStep {
   StartFetchingFromGithubRemote = 'StartFetchingFromGithubRemote',
   CantSyncInSpecialGitStateAutoFixSucceed = 'CantSyncInSpecialGitStateAutoFixSucceed',
 }
+/**
+ * Steps that indicate we have new files, so we can restart our wiki to reload changes
+ */
+export const stepsAboutChange = [GitStep.FetchingData, GitStep.LocalStateBehindSync, GitStep.RebaseSucceed];
