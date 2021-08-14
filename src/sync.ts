@@ -1,7 +1,5 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { GitProcess, IGitResult } from 'dugite';
-import git from 'isomorphic-git';
-import fs from 'fs-extra';
 import { CantSyncInSpecialGitStateAutoFixFailed, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
 import { GitStep, ILogger } from './interface';
@@ -28,7 +26,7 @@ export async function commitFiles(
     });
 
   logProgress(GitStep.AddingFiles);
-  await git.add({ dir, filepath: '.', fs });
+  await GitProcess.exec(['add', '.'], dir);
   logProgress(GitStep.AddComplete);
   return await GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir);
 }
