@@ -30,6 +30,7 @@
   "dependencies": {
     "dugite": "^1.103.0",
     "fs-extra": "^9.1.0",
+    "isomorphic-git": "^1.9.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
