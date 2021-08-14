@@ -1,6 +1,7 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import fs from 'fs-extra';
 import path from 'path';
+import git from 'isomorphic-git';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
 import url from 'url';
@@ -56,16 +57,14 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
 
 /**
  * Inspect git's remote url from folder's .git config
- * @param wikiFolderPath git folder to inspect
- * @returns remote url
+ * @param dir wiki folder path, git folder to inspect
+ * @returns remote url, without `'.git'`
  */
-export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
-  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], wikiFolderPath);
-  const remotes = compact(remoteStdout.split('\n'));
-  const githubRemote = remotes.find((remote) => remote === 'origin') ?? remotes[0] ?? '';
-  if (githubRemote.length > 0) {
-    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], wikiFolderPath);
-    return remoteUrlStdout.replace('.git', '');
+ export async function getRemoteUrl(dir: string): Promise<string> {
+  const remotes = await git.listRemotes({ fs, dir });
+  const githubRemote = remotes.find(({ remote }) => remote === 'origin') ?? remotes[0];
+  if ((githubRemote?.url?.length ?? 0) > 0) {
+    return githubRemote!.url.replace('.git', '');
   }
   return '';
 }
