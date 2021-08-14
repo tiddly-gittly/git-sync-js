@@ -163,7 +163,7 @@ export async function commitAndSync(options: {
     tags: false,
   });
   //
-  switch (await getSyncState(dir, logger)) {
+  switch (await getSyncState(dir, logger, defaultBranchName)) {
     case 'noUpstream': {
       await credentialOff(dir);
       throw new CantSyncGitNotInitializedError(dir);
@@ -201,7 +201,7 @@ export async function commitAndSync(options: {
       logProgress(GitStep.LocalStateDivergeRebase);
       const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir);
       logProgress(GitStep.RebaseResultChecking);
-      if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, logger)) === 'ahead') {
+      if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, logger, defaultBranchName)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
       } else {
         await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
@@ -226,7 +226,7 @@ export async function commitAndSync(options: {
   }
   await credentialOff(dir);
   logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-  await assumeSync(dir, logger);
+  await assumeSync(dir, logger, defaultBranchName);
   logProgress(GitStep.SynchronizationFinish);
 }
 
