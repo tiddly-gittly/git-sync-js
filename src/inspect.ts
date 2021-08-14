@@ -171,26 +171,36 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
   if (typeof gitDirectory !== 'string' || gitDirectory.length === 0) {
     return 'NOGIT';
   }
+  const [isRebaseI, isRebaseM, isAMRebase, isMerging, isCherryPicking, isBisecting, isInsideGitDir] = await Promise.all([
+    ((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    ((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory?.(),
+    ((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory?.(),
+    ((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    ((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    ((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    (await GitProcess.exec(['rev-parse', '--is-inside-git-dir', wikiFolderPath], wikiFolderPath))?.stdout?.startsWith('true'),
+  ]);
   let result = '';
-  if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
+  /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+  if (isRebaseI) {
     result += 'REBASE-i';
-  } else if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory?.()) {
+  } else if (isRebaseM) {
     result += 'REBASE-m';
   } else {
-    if (((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory?.()) {
+    if (isAMRebase) {
       result += 'AM/REBASE';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
+    if (isMerging) {
       result += 'MERGING';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
+    if (isCherryPicking) {
       result += 'CHERRY-PICKING';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile?.()) {
+    if (isBisecting) {
       result += 'BISECTING';
     }
   }
-  if ((await GitProcess.exec(['rev-parse', '--is-inside-git-dir', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true')) {
+  if (isInsideGitDir) {
     result += (await GitProcess.exec(['rev-parse', '--is-bare-repository', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true') ? '|BARE' : '|GIT_DIR';
   } else if ((await GitProcess.exec(['rev-parse', '--is-inside-work-tree', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true')) {
     const { exitCode } = await GitProcess.exec(['diff', '--no-ext-diff', '--quiet', '--exit-code'], wikiFolderPath);
@@ -199,6 +209,7 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
       result += '|DIRTY';
     }
   }
+  /* eslint-enable @typescript-eslint/strict-boolean-expressions */
   return result;
 }
 
