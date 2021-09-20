@@ -8,9 +8,9 @@
         "dist"
     ],
     "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "lib": ["es6"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "lib": ["ESNext"],
         "moduleResolution": "node",
         "outDir": "./dist",
         "declaration": true,
