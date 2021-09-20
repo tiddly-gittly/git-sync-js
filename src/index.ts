@@ -63,11 +63,11 @@ export async function initGit(options: {
   await credentialOn(dir, remoteUrl, gitUserName, userInfo?.accessToken);
   logProgress(GitStep.StartBackupToGitRemote);
   const defaultBranchName = await getDefaultBranchName(dir);
-  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', `${defaultBranchName}:${defaultBranchName}`], dir);
+  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
   await credentialOff(dir);
   if (pushExitCode !== 0) {
     logProgress(GitStep.GitPushFailed);
-    throw new GitPullPushError(options, `${defaultBranchName}:${defaultBranchName} ${pushStdError}`);
+    throw new GitPullPushError(options, `branch: ${defaultBranchName} ${pushStdError}`);
   } else {
     logProgress(GitStep.SynchronizationFinish);
   }
