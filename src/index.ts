@@ -67,7 +67,7 @@ export async function initGit(options: {
   await credentialOff(dir);
   if (pushExitCode !== 0) {
     logProgress(GitStep.GitPushFailed);
-    throw new GitPullPushError(options, pushStdError);
+    throw new GitPullPushError(options, `${defaultBranchName}:${defaultBranchName} ${pushStdError}`);
   } else {
     logProgress(GitStep.SynchronizationFinish);
   }
