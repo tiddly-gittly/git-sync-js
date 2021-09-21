@@ -151,14 +151,20 @@ export async function commitAndSync(options: {
   await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
   //
   switch (await getSyncState(dir, logger, defaultBranchName)) {
-    case 'noUpstream': {
-      await credentialOff(dir);
-      throw new CantSyncGitNotInitializedError(dir);
-    }
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
       await credentialOff(dir);
       return;
+    }
+    case 'noUpstream': {
+      logProgress(GitStep.LocalAheadStartUpload);
+      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
+      if (exitCode === 0) {
+        break;
+      }
+      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.GitPushFailed);
+      throw new CantSyncGitNotInitializedError(dir);
+      break;
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);
