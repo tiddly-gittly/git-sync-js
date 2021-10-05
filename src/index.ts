@@ -149,7 +149,8 @@ export async function commitAndSync(options: {
   await credentialOn(dir, remoteUrl, gitUserName, accessToken);
   logProgress(GitStep.FetchingData);
   await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
-  //
+  let exitCode = 0;
+  let stderr: string | undefined;
   switch (await getSyncState(dir, logger, defaultBranchName)) {
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
@@ -158,17 +159,16 @@ export async function commitAndSync(options: {
     }
     case 'noUpstream': {
       logProgress(GitStep.LocalAheadStartUpload);
-      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
+      ({ exitCode, stderr } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir));
       if (exitCode === 0) {
         break;
       }
       logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.GitPushFailed);
       throw new CantSyncGitNotInitializedError(dir);
-      break;
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);
-      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], dir);
+      ({ exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], dir));
       if (exitCode === 0) {
         break;
       }
@@ -177,7 +177,7 @@ export async function commitAndSync(options: {
     }
     case 'behind': {
       logProgress(GitStep.LocalStateBehindSync);
-      const { exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`], dir);
+      ({ exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`], dir));
       if (exitCode === 0) {
         break;
       }
@@ -186,8 +186,11 @@ export async function commitAndSync(options: {
     }
     case 'diverged': {
       logProgress(GitStep.LocalStateDivergeRebase);
-      const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir);
+      ({ exitCode, stderr } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir));
       logProgress(GitStep.RebaseResultChecking);
+      if (exitCode !== 0) {
+        logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseConflictNeedsResolve);
+      }
       if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, logger, defaultBranchName)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
       } else {
@@ -202,9 +205,11 @@ export async function commitAndSync(options: {
     }
   }
   await credentialOff(dir);
-  logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-  await assumeSync(dir, logger, defaultBranchName);
-  logProgress(GitStep.SynchronizationFinish);
+  if (exitCode === 0) {
+    logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
+    await assumeSync(dir, logger, defaultBranchName);
+    logProgress(GitStep.SynchronizationFinish);
+  }
 }
 
 export async function clone(options: {
