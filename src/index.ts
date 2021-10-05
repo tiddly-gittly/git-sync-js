@@ -209,6 +209,15 @@ export async function commitAndSync(options: {
     logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
     await assumeSync(dir, logger, defaultBranchName);
     logProgress(GitStep.SynchronizationFinish);
+  } else {
+    switch (exitCode) {
+      // "message":"exitCode: 128, stderr of git push: fatal: unable to access 'https://github.com/tiddly-gittly/TiddlyWiki-Chinese-Tutorial.git/': LibreSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443 \n"
+      case 128: {
+        // ignore network error, silent fail because user don't need TiddlyGit to tell me we don't have network connection
+        break;
+      }
+      // TODO: handle auth expire and throw here
+    }
   }
 }
 
