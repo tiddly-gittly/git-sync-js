@@ -118,8 +118,8 @@ await getModifiedFileList(wikiFolderPath)
 Inspect git's remote url from folder's .git config
 
 ```ts
-export async function credentialOff(directory: string): Promise<void> {
-  const githubRepoUrl = await getRemoteUrl(directory);
+export async function credentialOff(directory: string, remoteUrl?: string): Promise<void> {
+  const githubRepoUrl = remoteUrl ?? await getRemoteUrl(directory);
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
   await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
 }

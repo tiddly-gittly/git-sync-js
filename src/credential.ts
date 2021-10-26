@@ -23,8 +23,8 @@ export async function credentialOn(directory: string, remoteUrl: string, userNam
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-export async function credentialOff(directory: string): Promise<void> {
-  const githubRepoUrl = await getRemoteUrl(directory);
+export async function credentialOff(directory: string, remoteUrl?: string): Promise<void> {
+  const githubRepoUrl = remoteUrl ?? (await getRemoteUrl(directory));
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
   await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
 }

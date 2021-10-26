@@ -64,7 +64,7 @@ export async function initGit(options: {
   logProgress(GitStep.StartBackupToGitRemote);
   const defaultBranchName = await getDefaultBranchName(dir);
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
-  await credentialOff(dir);
+  await credentialOff(dir, remoteUrl);
   if (pushExitCode !== 0) {
     logProgress(GitStep.GitPushFailed);
     throw new GitPullPushError(options, `branch: ${defaultBranchName} ${pushStdError}`);
@@ -154,7 +154,7 @@ export async function commitAndSync(options: {
   switch (await getSyncState(dir, logger, defaultBranchName)) {
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
-      await credentialOff(dir);
+      await credentialOff(dir, remoteUrl);
       return;
     }
     case 'noUpstream': {
@@ -204,7 +204,7 @@ export async function commitAndSync(options: {
       logProgress(GitStep.SyncFailedAlgorithmWrong);
     }
   }
-  await credentialOff(dir);
+  await credentialOff(dir, remoteUrl);
   if (exitCode === 0) {
     logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
     await assumeSync(dir, logger, defaultBranchName);
@@ -277,7 +277,7 @@ export async function clone(options: {
   logProgress(GitStep.StartFetchingFromGithubRemote);
   const defaultBranchName = await getDefaultBranchName(dir);
   const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`], dir);
-  await credentialOff(dir);
+  await credentialOff(dir, remoteUrl);
   if (exitCode !== 0) {
     throw new GitPullPushError(options, pullStdError);
   } else {
