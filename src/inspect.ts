@@ -119,7 +119,7 @@ export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged'
  * @param dir repo path to test
  */
 export async function getSyncState(dir: string, logger?: ILogger, defaultBranchName?: string): Promise<SyncState> {
-  const logDebug = (message: string, step: GitStep): unknown => logger?.log?.(message, { functionName: 'getSyncState', step, dir });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
       functionName: 'getSyncState',
@@ -214,7 +214,7 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
  * @param dir repo path
  */
 export async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
-  const logDebug = (message: string, step: GitStep): unknown => logger?.log?.(message, { functionName: 'getSyncState', step, dir });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
       functionName: 'getSyncState',

@@ -34,11 +34,13 @@ export async function initGit(options: {
       functionName: 'initGit',
       step,
     });
-  const logDebug = (message: string, step: GitStep): unknown => logger?.log(message, { functionName: 'initGit', step });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.debug(message, { functionName: 'initGit', step });
 
   logProgress(GitStep.StartGitInitialization);
   const { gitUserName, email } = userInfo ?? defaultGitInfo;
+  logDebug(`Running git init in dir ${dir}`, GitStep.StartGitInitialization);
   await GitProcess.exec(['init'], dir);
+  logDebug(`Succefully Running git init in dir ${dir}`, GitStep.StartGitInitialization);
   await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email);
 
   // if we are config local note git, we are done here
@@ -100,21 +102,21 @@ export async function commitAndSync(options: {
   }
 
   const logProgress = (step: GitStep): unknown =>
-    logger?.info(step, {
+    logger?.info?.(step, {
       functionName: 'commitAndSync',
       step,
       dir,
       remoteUrl,
     });
   const logDebug = (message: string, step: GitStep): unknown =>
-    logger?.log(message, {
+    logger?.debug?.(message, {
       functionName: 'commitAndSync',
       step,
       dir,
       remoteUrl,
     });
   const logWarn = (message: string, step: GitStep): unknown =>
-    logger?.warn(message, {
+    logger?.warn?.(message, {
       functionName: 'commitAndSync',
       step,
       dir,
@@ -252,7 +254,7 @@ export async function clone(options: {
       remoteUrl,
     });
   const logDebug = (message: string, step: GitStep): unknown =>
-    logger?.log(message, {
+    logger?.debug(message, {
       functionName: 'commitAndSync',
       step,
       dir,
@@ -271,7 +273,9 @@ export async function clone(options: {
     }),
     GitStep.PrepareCloneOnlineWiki,
   );
+  logDebug(`Running git init in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
   await GitProcess.exec(['init'], dir);
+  logDebug(`Succefully Running git init in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken);
   logProgress(GitStep.StartFetchingFromGithubRemote);

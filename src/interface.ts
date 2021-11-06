@@ -17,7 +17,7 @@ export interface ILogger {
   /** used to report progress for human user to read */
   info: (message: GitStep, context: ILoggerContext) => unknown;
   /** used to report debug logs */
-  log: (message: string, context: ILoggerContext) => unknown;
+  debug: (message: string, context: ILoggerContext) => unknown;
   /** used to report failed optional progress */
   warn: (message: string, context: ILoggerContext) => unknown;
 }
