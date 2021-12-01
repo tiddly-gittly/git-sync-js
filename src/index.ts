@@ -89,8 +89,10 @@ export async function commitAndSync(options: {
   commitMessage?: string;
   logger?: ILogger;
   defaultGitInfo: typeof defaultDefaultGitInfo;
+  /** if you want to use a dynamic .gitignore, you can passing an array contains filepaths that want to ignore */
+  filesToIgnore?: string[];
 }): Promise<void> {
-  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
+  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger, defaultGitInfo = defaultDefaultGitInfo, filesToIgnore } = options;
   const { gitUserName, email } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
 
@@ -141,7 +143,13 @@ export async function commitAndSync(options: {
   if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
     logDebug(commitMessage, GitStep.HaveThingsToCommit);
-    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email, commitMessage);
+    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(
+      dir,
+      gitUserName,
+      email ?? defaultGitInfo.email,
+      commitMessage,
+      filesToIgnore,
+    );
     if (commitExitCode !== 0) {
       logWarn(`commit failed ${commitStdError}`, GitStep.CommitComplete);
     }

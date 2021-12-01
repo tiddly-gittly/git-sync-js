@@ -1,6 +1,6 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { GitProcess, IGitResult } from 'dugite';
-import git from 'isomorphic-git';
+import { add, listFiles, remove } from 'isomorphic-git';
 import fs from 'fs-extra';
 
 import { CantSyncInSpecialGitStateAutoFixFailed, SyncScriptIsInDeadLoopError } from './errors';
@@ -19,6 +19,7 @@ export async function commitFiles(
   username: string,
   email: string,
   message = 'Initialize with TiddlyGit-Desktop',
+  filesToIgnore: string[] = [],
   logger?: ILogger,
 ): Promise<IGitResult> {
   const logProgress = (step: GitStep): unknown =>
@@ -29,7 +30,16 @@ export async function commitFiles(
     });
 
   logProgress(GitStep.AddingFiles);
-  await git.add({ dir, filepath: '.', fs });
+  await add({ dir, filepath: '.', fs });
+  // find and unStage files that are in the ignore list
+  const stagedFiles = await listFiles({ fs, dir });
+  if (filesToIgnore.length > 0) {
+    const stagedFilesToIgnore = filesToIgnore.filter((file) => stagedFiles.includes(file));
+    if (stagedFilesToIgnore.length > 0) {
+      await Promise.all(stagedFilesToIgnore.map(async (file) => await remove({ dir, filepath: file, fs })));
+    }
+  }
+
   logProgress(GitStep.AddComplete);
   return await GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir);
 }

@@ -74,6 +74,7 @@ try {
         logger.notice(this.translateMessage(message), { handler: WikiChannel.syncProgress, callerFunction: 'commitAndSync', ...context });
       },
     },
+    filesToIgnore,
   });
 } catch (error) {
   this.translateErrorMessage(error);
@@ -110,7 +111,7 @@ try {
 Get modified files and modify type in a folder
 
 ```ts
-await getModifiedFileList(wikiFolderPath)
+await getModifiedFileList(wikiFolderPath);
 ```
 
 ### getRemoteUrl
@@ -119,7 +120,7 @@ Inspect git's remote url from folder's .git config
 
 ```ts
 export async function credentialOff(directory: string, remoteUrl?: string): Promise<void> {
-  const githubRepoUrl = remoteUrl ?? await getRemoteUrl(directory);
+  const githubRepoUrl = remoteUrl ?? (await getRemoteUrl(directory));
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
   await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
 }
