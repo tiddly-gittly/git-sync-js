@@ -21,9 +21,9 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const stdoutLines = stdout.split('\n');
   const nonEmptyLines = compact(stdoutLines);
-  const statusMatrixLines = (compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+.*\S+)$/.exec(line))).filter(
+  const statusMatrixLines = compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+.*\S+)$/.exec(line))).filter(
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
-  ) as unknown) as Array<[unknown, string, string]>;
+  ) as unknown as Array<[unknown, string, string]>;
   return statusMatrixLines.map(([_, type, rawFileRelativePath]) => {
     /**
      * If filename contains Chinese, it will becomes:
@@ -60,7 +60,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
  * @param dir wiki folder path, git folder to inspect
  * @returns remote url, without `'.git'`
  */
- export async function getRemoteUrl(dir: string): Promise<string> {
+export async function getRemoteUrl(dir: string): Promise<string> {
   const remotes = await git.listRemotes({ fs, dir });
   const githubRemote = remotes.find(({ remote }) => remote === 'origin') ?? remotes[0];
   if ((githubRemote?.url?.length ?? 0) > 0) {
@@ -101,13 +101,13 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
  * Get "master" or "main" from git repo
  * @param wikiFolderPath
  */
-export async function getDefaultBranchName(wikiFolderPath: string): Promise<string> {
+export async function getDefaultBranchName(wikiFolderPath: string): Promise<string | undefined> {
   const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
   const lines = stdout.split('\n');
   const lineWithHEAD = lines.find((line: string) => line.includes('HEAD branch: '));
   const branchName = lineWithHEAD?.replace?.('HEAD branch: ', '')?.replace?.(/\s/g, '');
   if (branchName === undefined || branchName.includes('(unknown)')) {
-    return 'master';
+    return;
   }
   return branchName;
 }
@@ -118,7 +118,7 @@ export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged'
  * 'ahead' means our local state is ahead of remote, 'behind' means local state is behind of the remote
  * @param dir repo path to test
  */
-export async function getSyncState(dir: string, logger?: ILogger, defaultBranchName?: string): Promise<SyncState> {
+export async function getSyncState(dir: string, defaultBranchName: string, logger?: ILogger): Promise<SyncState> {
   const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
@@ -126,10 +126,6 @@ export async function getSyncState(dir: string, logger?: ILogger, defaultBranchN
       step,
       dir,
     });
-
-  if (defaultBranchName === undefined) {
-    defaultBranchName = await getDefaultBranchName(dir);
-  }
   logProgress(GitStep.CheckingLocalSyncState);
   const { stdout } = await GitProcess.exec(['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`], dir);
   logDebug(`Checking sync state with upstream, stdout:\n${stdout}\n(stdout end)`, GitStep.CheckingLocalSyncState);
@@ -149,8 +145,8 @@ export async function getSyncState(dir: string, logger?: ILogger, defaultBranchN
   return 'diverged';
 }
 
-export async function assumeSync(wikiFolderPath: string, logger?: ILogger, defaultBranchName?: string): Promise<void> {
-  if ((await getSyncState(wikiFolderPath, logger, defaultBranchName)) === 'equal') {
+export async function assumeSync(wikiFolderPath: string, defaultBranchName: string, logger?: ILogger): Promise<void> {
+  if ((await getSyncState(wikiFolderPath, defaultBranchName, logger)) === 'equal') {
     return;
   }
   throw new AssumeSyncError();

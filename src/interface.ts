@@ -8,6 +8,7 @@ export interface IGitUserInfosWithoutToken {
   email: string | null | undefined;
   /** Github Login: username , this is also used to filter user's repo when searching repo */
   gitUserName: string;
+  branch: string;
 }
 
 /** custom logger to report progress on each step

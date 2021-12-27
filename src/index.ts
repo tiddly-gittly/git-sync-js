@@ -37,7 +37,7 @@ export async function initGit(options: {
   const logDebug = (message: string, step: GitStep): unknown => logger?.debug(message, { functionName: 'initGit', step });
 
   logProgress(GitStep.StartGitInitialization);
-  const { gitUserName, email } = userInfo ?? defaultGitInfo;
+  const { gitUserName, email, branch } = userInfo ?? defaultGitInfo;
   logDebug(`Running git init in dir ${dir}`, GitStep.StartGitInitialization);
   await GitProcess.exec(['init'], dir);
   logDebug(`Succefully Running git init in dir ${dir}`, GitStep.StartGitInitialization);
@@ -64,7 +64,7 @@ export async function initGit(options: {
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, userInfo?.accessToken);
   logProgress(GitStep.StartBackupToGitRemote);
-  const defaultBranchName = await getDefaultBranchName(dir);
+  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
   await credentialOff(dir, remoteUrl);
   if (pushExitCode !== 0) {
@@ -93,7 +93,7 @@ export async function commitAndSync(options: {
   filesToIgnore?: string[];
 }): Promise<void> {
   const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger, defaultGitInfo = defaultDefaultGitInfo, filesToIgnore } = options;
-  const { gitUserName, email } = userInfo ?? defaultGitInfo;
+  const { gitUserName, email, branch } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
 
   if (accessToken === '' || accessToken === undefined) {
@@ -125,7 +125,7 @@ export async function commitAndSync(options: {
       remoteUrl,
     });
 
-  const defaultBranchName = await getDefaultBranchName(dir);
+  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
   /** when push to origin, we need to specify the local branch name and remote branch name */
   const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
 
@@ -161,7 +161,7 @@ export async function commitAndSync(options: {
   await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
   let exitCode = 0;
   let stderr: string | undefined;
-  switch (await getSyncState(dir, logger, defaultBranchName)) {
+  switch (await getSyncState(dir, defaultBranchName, logger)) {
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
       await credentialOff(dir, remoteUrl);
@@ -201,7 +201,7 @@ export async function commitAndSync(options: {
       if (exitCode !== 0) {
         logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseConflictNeedsResolve);
       }
-      if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, logger, defaultBranchName)) === 'ahead') {
+      if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, defaultBranchName, logger)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
       } else {
         await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
@@ -217,7 +217,7 @@ export async function commitAndSync(options: {
   await credentialOff(dir, remoteUrl);
   if (exitCode === 0) {
     logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-    await assumeSync(dir, logger, defaultBranchName);
+    await assumeSync(dir, defaultBranchName, logger);
     logProgress(GitStep.SynchronizationFinish);
   } else {
     switch (exitCode) {
@@ -244,7 +244,7 @@ export async function clone(options: {
   defaultGitInfo?: typeof defaultDefaultGitInfo;
 }): Promise<void> {
   const { dir, remoteUrl, userInfo, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
-  const { gitUserName } = userInfo ?? defaultGitInfo;
+  const { gitUserName, branch } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
 
   if (accessToken === '' || accessToken === undefined) {
@@ -287,7 +287,7 @@ export async function clone(options: {
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken);
   logProgress(GitStep.StartFetchingFromGithubRemote);
-  const defaultBranchName = await getDefaultBranchName(dir);
+  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
   const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`], dir);
   await credentialOff(dir, remoteUrl);
   if (exitCode !== 0) {
