@@ -228,16 +228,24 @@ export async function getGitDirectory(dir: string, logger?: ILogger): Promise<st
     const { stdout: stdout2 } = await GitProcess.exec(['rev-parse', '--git-dir', dir], dir);
     const [gitPath2, gitPath1] = compact(stdout2.split('\n'));
     if (gitPath2 !== undefined && gitPath1 !== undefined) {
-      return path.resolve(`${gitPath1}/${gitPath2}`);
+      return path.resolve(gitPath1, gitPath2);
     }
   }
   throw new CantSyncGitNotInitializedError(dir);
 }
 
-/** Check if dir has `.git`. */
-export async function hasGit(dir: string): Promise<boolean> {
+/**
+ * Check if dir has `.git`.
+ * @param dir folder that may contains a git
+ * @param strict if is true, then dir should be the root of the git repo. Default is true
+ * @returns
+ */
+export async function hasGit(dir: string, strict = true): Promise<boolean> {
   try {
-    await getGitDirectory(dir);
+    const resultDir = await getGitDirectory(dir);
+    if (strict && path.dirname(resultDir) !== dir) {
+      return false;
+    }
   } catch (error) {
     if (error instanceof CantSyncGitNotInitializedError) {
       return false;

@@ -1,21 +1,15 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
-/* eslint-disable unicorn/prefer-module */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from 'fs-extra';
-import path from 'path';
 import { GitProcess } from 'dugite';
-
-/**
- * mockRepoLocation
- */
 // eslint-disable-next-line unicorn/prevent-abbreviations
-const dir = path.join(__dirname, 'mockRepo');
+import { dir } from './constants';
 
 beforeAll(async () => {
   return await setUpMockGitRepositories();
 });
 
-beforeAll(async () => {
+afterAll(async () => {
   return await resetMockGitRepositories();
 });
 
