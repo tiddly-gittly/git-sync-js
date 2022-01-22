@@ -13,10 +13,9 @@ describe('getGitDirectory', () => {
   });
 
   describe('when no git', () => {
-    beforeAll(async () => {
+    beforeEach(async () => {
       await fs.remove(gitDirectory);
     });
-
     test("the git dir will be git-sync's dir", async () => {
       expect(await getGitDirectory(dir)).toBe(gitSyncRepoDirectoryGitDirectory);
     });

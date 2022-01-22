@@ -5,13 +5,14 @@ import fs from 'fs-extra';
 import { dir } from './constants';
 import { initGitWithBranch } from '../src/init';
 
-beforeAll(async () => {
+beforeEach(async () => {
+  await resetMockGitRepositories();
   return await setUpMockGitRepositories();
 });
 
-afterAll(async () => {
-  return await resetMockGitRepositories();
-});
+// afterAll(async () => {
+//   return await resetMockGitRepositories();
+// });
 
 async function setUpMockGitRepositories() {
   if (!(await fs.pathExists(dir))) {
