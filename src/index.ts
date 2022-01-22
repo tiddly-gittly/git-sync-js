@@ -173,7 +173,7 @@ export async function commitAndSync(options: {
       if (exitCode === 0) {
         break;
       }
-      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.GitPushFailed);
+      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.LocalAheadStartUpload);
       throw new CantSyncGitNotInitializedError(dir);
     }
     case 'ahead': {
@@ -182,7 +182,7 @@ export async function commitAndSync(options: {
       if (exitCode === 0) {
         break;
       }
-      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.GitPushFailed);
+      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.LocalAheadStartUpload);
       break;
     }
     case 'behind': {
@@ -191,7 +191,7 @@ export async function commitAndSync(options: {
       if (exitCode === 0) {
         break;
       }
-      logWarn(`exitCode: ${exitCode}, stderr of git merge: ${stderr}`, GitStep.GitMergeFailed);
+      logWarn(`exitCode: ${exitCode}, stderr of git merge: ${stderr}`, GitStep.LocalStateBehindSync);
       break;
     }
     case 'diverged': {
@@ -199,7 +199,7 @@ export async function commitAndSync(options: {
       ({ exitCode, stderr } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir));
       logProgress(GitStep.RebaseResultChecking);
       if (exitCode !== 0) {
-        logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseConflictNeedsResolve);
+        logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseResultChecking);
       }
       if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, defaultBranchName, logger)) === 'ahead') {
         logProgress(GitStep.RebaseSucceed);
