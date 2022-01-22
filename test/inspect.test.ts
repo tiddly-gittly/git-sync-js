@@ -30,7 +30,7 @@ describe('getGitDirectory', () => {
   });
 });
 
-describe.only('getDefaultBranchName', () => {
+describe('getDefaultBranchName', () => {
   test('it is main now due to BLM activities', async () => {
     const branch = await getDefaultBranchName(dir);
     expect(branch).toBe('main');

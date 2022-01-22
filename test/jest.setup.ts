@@ -1,10 +1,9 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from 'fs-extra';
-import { GitProcess } from 'dugite';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir } from './constants';
-import { defaultGitInfo } from '../src/defaultGitInfo';
+import { initGitWithBranch } from '../src/init';
 
 beforeAll(async () => {
   return await setUpMockGitRepositories();
@@ -18,7 +17,7 @@ async function setUpMockGitRepositories() {
   if (!(await fs.pathExists(dir))) {
     await fs.mkdir(dir);
   }
-  await GitProcess.exec(['init', `--initial-branch=${defaultGitInfo.branch}`], dir);
+  await initGitWithBranch(dir);
 }
 
 async function resetMockGitRepositories() {

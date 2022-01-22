@@ -7,6 +7,7 @@ import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingE
 import { credentialOn, credentialOff } from './credential';
 import { getDefaultBranchName, getGitRepositoryState, haveLocalChanges, getSyncState, assumeSync } from './inspect';
 import { commitFiles, continueRebase } from './sync';
+import { initGitWithBranch } from './init';
 
 export * from './interface';
 export * from './defaultGitInfo';
@@ -39,7 +40,7 @@ export async function initGit(options: {
   logProgress(GitStep.StartGitInitialization);
   const { gitUserName, email, branch } = userInfo ?? defaultGitInfo;
   logDebug(`Running git init in dir ${dir}`, GitStep.StartGitInitialization);
-  await GitProcess.exec(['init'], dir);
+  await initGitWithBranch(dir, branch);
   logDebug(`Succefully Running git init in dir ${dir}`, GitStep.StartGitInitialization);
   await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email);
 

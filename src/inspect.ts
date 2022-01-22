@@ -100,20 +100,13 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
 
 /**
  * Get "master" or "main" from git repo
- * 
+ *
  * https://github.com/simonthum/git-sync/blob/31cc140df2751e09fae2941054d5b61c34e8b649/git-sync#L228-L232
  * @param wikiFolderPath
  */
 export async function getDefaultBranchName(wikiFolderPath: string): Promise<string | undefined> {
-  const { stdout } = await GitProcess.exec(['symbolic-ref', ' -q', 'HEAD'], wikiFolderPath);
-  // DEBUG: console
-  console.log(`stdout`, stdout);
-  const lines = stdout.split('\n');
-  const lineWithHEAD = lines.find((line: string) => line.includes('HEAD branch: '));
-  const branchName = lineWithHEAD?.replace?.('HEAD branch: ', '')?.replace?.(/\s/g, '');
-  if (branchName === undefined || branchName.includes('(unknown)')) {
-    return;
-  }
+  const { stdout } = await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], wikiFolderPath);
+  const [branchName] = stdout.split('\n');
   return branchName;
 }
 
