@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import { getGitDirectory, hasGit } from '../src/inspect';
+import { getDefaultBranchName, getGitDirectory, hasGit } from '../src/inspect';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
 
@@ -30,9 +30,9 @@ describe('getGitDirectory', () => {
   });
 });
 
-// describe('getGitDirectory', () => {
-//   test('echo the git dir', async () => {
-//     const gitDirectory = await getGitDirectory(dir);
-//     expect(gitDirectory).toBe(path.join(dir, '.git'));
-//   });
-// });
+describe.only('getDefaultBranchName', () => {
+  test('it is main now due to BLM activities', async () => {
+    const branch = await getDefaultBranchName(dir);
+    expect(branch).toBe('main');
+  });
+});

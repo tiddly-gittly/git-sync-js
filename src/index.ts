@@ -168,12 +168,12 @@ export async function commitAndSync(options: {
       return;
     }
     case 'noUpstream': {
-      logProgress(GitStep.LocalAheadStartUpload);
+      logProgress(GitStep.NoUpstreamCantPush);
       ({ exitCode, stderr } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir));
       if (exitCode === 0) {
         break;
       }
-      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.LocalAheadStartUpload);
+      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.NoUpstreamCantPush);
       throw new CantSyncGitNotInitializedError(dir);
     }
     case 'ahead': {

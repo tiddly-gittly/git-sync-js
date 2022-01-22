@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir } from './constants';
+import { defaultGitInfo } from '../src/defaultGitInfo';
 
 beforeAll(async () => {
   return await setUpMockGitRepositories();
@@ -17,7 +18,7 @@ async function setUpMockGitRepositories() {
   if (!(await fs.pathExists(dir))) {
     await fs.mkdir(dir);
   }
-  await GitProcess.exec(['init'], dir);
+  await GitProcess.exec(['init', `--initial-branch=${defaultGitInfo.branch}`], dir);
 }
 
 async function resetMockGitRepositories() {

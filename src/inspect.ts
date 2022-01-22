@@ -1,7 +1,8 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable unicorn/prevent-abbreviations */
 import fs from 'fs-extra';
 import path from 'path';
-import git from 'isomorphic-git';
+import { listRemotes } from 'isomorphic-git';
 import { compact } from 'lodash';
 import { GitProcess } from 'dugite';
 import url from 'url';
@@ -61,7 +62,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
  * @returns remote url, without `'.git'`
  */
 export async function getRemoteUrl(dir: string): Promise<string> {
-  const remotes = await git.listRemotes({ fs, dir });
+  const remotes = await listRemotes({ fs, dir });
   const githubRemote = remotes.find(({ remote }) => remote === 'origin') ?? remotes[0];
   if ((githubRemote?.url?.length ?? 0) > 0) {
     return githubRemote!.url.replace('.git', '');
@@ -99,10 +100,14 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
 
 /**
  * Get "master" or "main" from git repo
+ * 
+ * https://github.com/simonthum/git-sync/blob/31cc140df2751e09fae2941054d5b61c34e8b649/git-sync#L228-L232
  * @param wikiFolderPath
  */
 export async function getDefaultBranchName(wikiFolderPath: string): Promise<string | undefined> {
-  const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
+  const { stdout } = await GitProcess.exec(['symbolic-ref', ' -q', 'HEAD'], wikiFolderPath);
+  // DEBUG: console
+  console.log(`stdout`, stdout);
   const lines = stdout.split('\n');
   const lineWithHEAD = lines.find((line: string) => line.includes('HEAD branch: '));
   const branchName = lineWithHEAD?.replace?.('HEAD branch: ', '')?.replace?.(/\s/g, '');

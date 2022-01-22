@@ -44,6 +44,7 @@ export enum GitStep {
   PreparingUserInfo = 'PreparingUserInfo',
   FetchingData = 'FetchingData',
   NoNeedToSync = 'NoNeedToSync',
+  NoUpstreamCantPush = 'NoUpstreamCantPush',
   LocalAheadStartUpload = 'LocalAheadStartUpload',
   CheckingLocalSyncState = 'CheckingLocalSyncState',
   CheckingLocalGitRepoSanity = 'CheckingLocalGitRepoSanity',
