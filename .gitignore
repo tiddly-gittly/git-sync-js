@@ -12,3 +12,4 @@ flycheck_*
 /secrets
 .dccache
 dist/
+test/mockRepo
