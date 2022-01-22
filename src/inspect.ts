@@ -39,6 +39,8 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
      *
      * So simply `decodeURIComponent(escape` will work on `tiddlers/\346\226\260\346\235\241\347\233\256.tid` (the logged string), but not on `tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid` (the actual string).
      * So how to transform actual string to logged string? Answer is `eval()` it. But we have to check is there any evil script use `;` or `,` mixed into the filename.
+     *
+     * // TODO: 不应该按照三个一组解析，因为只有 0x0800 - 0xffff 之间的才被编码到三字节；所以应该直接把所有的 \\\d{3} 全都替换成 % 加十六进制，然后交给 decode 看天意解析就行了
      */
     const isSafeUtf8UnescapedString =
       rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') && !rawFileRelativePath.includes(',');
