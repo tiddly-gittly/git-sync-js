@@ -1,11 +1,11 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
-import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteRepoName, getRemoteUrl, hasGit } from '../src/inspect';
+import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteRepoName, getRemoteUrl, hasGit, haveLocalChanges } from '../src/inspect';
 import { credentialOff, credentialOn, getGitUrlWithCredential, getGitUrlWithCredentialAndSuffix } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, exampleRemoteUrl, exampleRepoName, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
+import { dir, exampleImageBuffer, exampleRemoteUrl, exampleRepoName, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
 
 describe('getGitDirectory', () => {
   test('echo the git dir', async () => {
@@ -47,14 +47,6 @@ describe('getDefaultBranchName', () => {
 });
 
 describe('getModifiedFileList', () => {
-  /** from https://stackoverflow.com/questions/39062595/how-can-i-create-a-png-blob-from-binary-data-in-a-typed-array */
-  const exampleImageBuffer = Buffer.from(
-    new Uint8Array([
-      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 8, 0, 0, 0, 8, 8, 2, 0, 0, 0, 75, 109, 41, 220, 0, 0, 0, 34, 73, 68, 65, 84, 8,
-      215, 99, 120, 173, 168, 135, 21, 49, 0, 241, 255, 15, 90, 104, 8, 33, 129, 83, 7, 97, 163, 136, 214, 129, 93, 2, 43, 2, 0, 181, 31, 90, 179, 225, 252,
-      176, 37, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
-    ]),
-  );
   test('list multiple English file names in different ext name', async () => {
     const paths: [string, string] = [`${dir}/image.png`, `${dir}/test.json`];
     await fs.writeFile(paths[0], exampleImageBuffer);
@@ -131,5 +123,29 @@ describe('getRemoteRepoName', () => {
 
   test('Throw when not a url', () => {
     expect(() => getRemoteRepoName('sdfasdf/asdfadsf')).toThrowError(new TypeError('Invalid URL'));
+  });
+});
+
+describe('haveLocalChanges', () => {
+  test('When there are newly added files', async () => {
+    expect(await haveLocalChanges(dir)).toBe(false);
+  });
+
+  describe('we touch some files', () => {
+    beforeEach(async () => {
+      const paths: [string, string] = [`${dir}/image.png`, `${dir}/test.json`];
+      await fs.writeFile(paths[0], exampleImageBuffer);
+      await fs.writeJSON(paths[1], { test: 'test' });
+    });
+    test('When there are newly added files', async () => {
+      expect(await haveLocalChanges(dir)).toBe(true);
+    });
+
+    test('No change after commit', async () => {
+      await GitProcess.exec(['add', '.'], dir);
+      expect(await haveLocalChanges(dir)).toBe(true);
+      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+      expect(await haveLocalChanges(dir)).toBe(false);
+    });
   });
 });
