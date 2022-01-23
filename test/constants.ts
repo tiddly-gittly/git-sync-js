@@ -12,8 +12,9 @@ export const gitDirectory = path.join(dir, '.git');
 export const gitSyncRepoDirectory = path.join(__dirname, '..');
 export const gitSyncRepoDirectoryGitDirectory = path.join(gitSyncRepoDirectory, '.git');
 
+export const exampleRepoName = 'tiddly-gittly/git-sync-js';
 /**
  * In TidGi, we use https remote without `.git` suffix, we will add `.git` when we need it.
  */
-export const exampleRemoteUrl = 'https://github.com/tiddly-gittly/git-sync-js';
+export const exampleRemoteUrl = `https://github.com/${exampleRepoName}`;
 export const exampleToken = 'testToken';

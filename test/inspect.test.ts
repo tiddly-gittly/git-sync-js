@@ -1,11 +1,11 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
-import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteUrl, hasGit } from '../src/inspect';
+import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteRepoName, getRemoteUrl, hasGit } from '../src/inspect';
 import { credentialOff, credentialOn, getGitUrlWithCredential, getGitUrlWithCredentialAndSuffix } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, exampleRemoteUrl, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
+import { dir, exampleRemoteUrl, exampleRepoName, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
 
 describe('getGitDirectory', () => {
   test('echo the git dir', async () => {
@@ -106,5 +106,30 @@ describe('getRemoteUrl', () => {
       expect(remoteUrl.includes(exampleToken)).toBe(false);
       expect(remoteUrl.endsWith('.git')).toBe(false);
     });
+  });
+});
+
+describe('getRemoteRepoName', () => {
+  test('Get github repo name', () => {
+    const repoName = getRemoteRepoName(exampleRemoteUrl);
+    expect(repoName).toBe(exampleRepoName);
+  });
+  test('Get gitlab repo name', () => {
+    const repoName = getRemoteRepoName('https://code.byted.org/ad/bytedance-secret-notes');
+    expect(repoName).toBe('ad/bytedance-secret-notes');
+  });
+
+  test('Return undefined from malformed url', () => {
+    const repoName = getRemoteRepoName('https://asdfasdf-asdfadsf');
+    expect(repoName).toBe(undefined);
+  });
+
+  test('Return last slash when unknown', () => {
+    const repoName = getRemoteRepoName('https://asdfasdf/asdfadsf');
+    expect(repoName).toBe('asdfadsf');
+  });
+
+  test('Throw when not a url', () => {
+    expect(() => getRemoteRepoName('sdfasdf/asdfadsf')).toThrowError(new TypeError('Invalid URL'));
   });
 });
