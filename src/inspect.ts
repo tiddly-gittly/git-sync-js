@@ -162,18 +162,23 @@ export async function assumeSync(wikiFolderPath: string, defaultBranchName: stri
  * // TODO: use template literal type to get exact type of git state
  */
 export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILogger): Promise<string> {
-  const gitDirectory = await getGitDirectory(wikiFolderPath, logger);
-  if (typeof gitDirectory !== 'string' || gitDirectory.length === 0) {
+  if (!(await hasGit(wikiFolderPath))) {
     return 'NOGIT';
   }
-  const [isRebaseI, isRebaseM, isAMRebase, isMerging, isCherryPicking, isBisecting, isInsideGitDir] = await Promise.all([
+  const gitDirectory = await getGitDirectory(wikiFolderPath, logger);
+  const [isRebaseI, isRebaseM, isAMRebase, isMerging, isCherryPicking, isBisecting] = await Promise.all([
+    // isRebaseI
     ((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    // isRebaseM
     ((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory?.(),
+    // isAMRebase
     ((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory?.(),
+    // isMerging
     ((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    // isCherryPicking
     ((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    // isBisecting
     ((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
-    (await GitProcess.exec(['rev-parse', '--is-inside-git-dir', wikiFolderPath], wikiFolderPath))?.stdout?.startsWith('true'),
   ]);
   let result = '';
   /* eslint-disable @typescript-eslint/strict-boolean-expressions */
@@ -195,16 +200,20 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
       result += 'BISECTING';
     }
   }
-  if (isInsideGitDir) {
-    result += (await GitProcess.exec(['rev-parse', '--is-bare-repository', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true') ? '|BARE' : '|GIT_DIR';
-  } else if ((await GitProcess.exec(['rev-parse', '--is-inside-work-tree', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true')) {
+  result += (await GitProcess.exec(['rev-parse', '--is-bare-repository', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true') ? '|BARE' : '';
+
+  /* if ((await GitProcess.exec(['rev-parse', '--is-inside-work-tree', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true')) {
     const { exitCode } = await GitProcess.exec(['diff', '--no-ext-diff', '--quiet', '--exit-code'], wikiFolderPath);
     // 1 if there were differences and 0 means no differences.
     if (exitCode !== 0) {
       result += '|DIRTY';
     }
+  } */
+  // previous above `git diff --no-ext-diff --quiet --exit-code` logic from git-sync script can only detect if an existed file changed, can't detect newly added file, so we use `haveLocalChanges` instead
+  if (await haveLocalChanges(wikiFolderPath)) {
+    result += '|DIRTY';
   }
-  /* eslint-enable @typescript-eslint/strict-boolean-expressions */
+
   return result;
 }
 
