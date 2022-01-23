@@ -128,9 +128,11 @@ export async function getSyncState(dir: string, defaultBranchName: string, logge
       dir,
     });
   logProgress(GitStep.CheckingLocalSyncState);
-  const { stdout } = await GitProcess.exec(['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`], dir);
+  const { stdout, stderr } = await GitProcess.exec(['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`], dir);
   logDebug(`Checking sync state with upstream, stdout:\n${stdout}\n(stdout end)`, GitStep.CheckingLocalSyncState);
-
+  if (stderr.length > 0) {
+    logDebug(`Have problem checking sync state with upstream,stderr:\n${stderr}\n(stderr end)`, GitStep.CheckingLocalSyncState);
+  }
   if (stdout === '') {
     return 'noUpstream';
   }

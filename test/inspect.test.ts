@@ -1,11 +1,32 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
-import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteRepoName, getRemoteUrl, hasGit, haveLocalChanges } from '../src/inspect';
+import {
+  getDefaultBranchName,
+  getGitDirectory,
+  getModifiedFileList,
+  getRemoteRepoName,
+  getRemoteUrl,
+  getSyncState,
+  hasGit,
+  haveLocalChanges,
+  SyncState,
+} from '../src/inspect';
 import { credentialOff, credentialOn, getGitUrlWithCredential, getGitUrlWithCredentialAndSuffix } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
-// eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, exampleImageBuffer, exampleRemoteUrl, exampleRepoName, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
+import {
+  // eslint-disable-next-line unicorn/prevent-abbreviations
+  dir,
+  exampleImageBuffer,
+  exampleRemoteUrl,
+  exampleRepoName,
+  exampleToken,
+  gitDirectory,
+  gitSyncRepoDirectoryGitDirectory,
+  // eslint-disable-next-line unicorn/prevent-abbreviations
+  upstreamDir,
+} from './constants';
+import { addSomeFiles } from './utils';
 
 describe('getGitDirectory', () => {
   test('echo the git dir', async () => {
@@ -48,9 +69,7 @@ describe('getDefaultBranchName', () => {
 
 describe('getModifiedFileList', () => {
   test('list multiple English file names in different ext name', async () => {
-    const paths: [string, string] = [`${dir}/image.png`, `${dir}/test.json`];
-    await fs.writeFile(paths[0], exampleImageBuffer);
-    await fs.writeJSON(paths[1], { test: 'test' });
+    const paths = await addSomeFiles();
     const fileList = await getModifiedFileList(dir);
     expect(fileList).toStrictEqual([
       { filePath: paths[0], fileRelativePath: paths[0].replace(`${dir}/`, ''), type: '??' },
@@ -133,9 +152,7 @@ describe('haveLocalChanges', () => {
 
   describe('we touch some files', () => {
     beforeEach(async () => {
-      const paths: [string, string] = [`${dir}/image.png`, `${dir}/test.json`];
-      await fs.writeFile(paths[0], exampleImageBuffer);
-      await fs.writeJSON(paths[1], { test: 'test' });
+      await addSomeFiles();
     });
     test('When there are newly added files', async () => {
       expect(await haveLocalChanges(dir)).toBe(true);
@@ -146,6 +163,57 @@ describe('haveLocalChanges', () => {
       expect(await haveLocalChanges(dir)).toBe(true);
       await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
       expect(await haveLocalChanges(dir)).toBe(false);
+    });
+  });
+});
+
+describe('getSyncState', () => {
+  test('It should have no upstream by default', async () => {
+    expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('noUpstream');
+  });
+
+  describe('Add a bare repo as the upstream', () => {
+    beforeEach(async () => {
+      await GitProcess.exec(['remote', 'add', 'origin', upstreamDir], dir);
+      /**
+       * Need to fetch the remote repo first, otherwise it will say:
+       * 
+       * ```
+       * % git rev-list --count --left-right origin/main...HEAD        
+          fatal: ambiguous argument 'origin/main...HEAD': unknown revision or path not in the working tree.
+          Use '--' to separate paths from revisions, like this:
+          'git <command> [<revision>...] -- [<file>...]'
+       * ```
+       */
+      await GitProcess.exec(['fetch', 'origin'], dir);
+    });
+
+    test('have a mock upstream', async () => {
+      expect(await getRemoteUrl(dir)).toBe(upstreamDir);
+    });
+    test('equal to upstream', async () => {
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    });
+    test('still equal there are newly added files', async () => {
+      await addSomeFiles();
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    });
+
+    test('ahead after commit', async () => {
+      await addSomeFiles();
+      await GitProcess.exec(['add', '.'], dir);
+      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+    });
+
+    test('behind after modify the remote', async () => {
+      await addSomeFiles(upstreamDir);
+      await GitProcess.exec(['add', '.'], upstreamDir);
+      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], upstreamDir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      // it is equal until we fetch the latest remote
+      await GitProcess.exec(['fetch', 'origin'], dir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
     });
   });
 });
