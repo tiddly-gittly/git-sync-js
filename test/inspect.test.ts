@@ -2,8 +2,10 @@
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
 import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteUrl, hasGit } from '../src/inspect';
+import { credentialOff, credentialOn, getGitUrlWithCredential } from '../src/credential';
+import { defaultGitInfo } from '../src/defaultGitInfo';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
+import { dir, exampleRemoteUrl, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
 
 describe('getGitDirectory', () => {
   test('echo the git dir', async () => {
@@ -73,5 +75,36 @@ describe('getModifiedFileList', () => {
       { filePath: paths[0], fileRelativePath: paths[0].replace(`${dir}/`, ''), type: '??' },
       { filePath: paths[1], fileRelativePath: paths[1].replace(`${dir}/`, ''), type: '??' },
     ]);
+  });
+});
+
+describe('getRemoteUrl', () => {
+  test("New repo don't have remote", async () => {
+    const remoteUrl = await getRemoteUrl(dir);
+    expect(remoteUrl).toBe('');
+  });
+
+  describe('credential can be added to the remote', () => {
+    test('it has remote with token after calling credentialOn', async () => {
+      await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken);
+      const remoteUrl = await getRemoteUrl(dir);
+      expect(remoteUrl.length).toBeGreaterThan(0);
+      expect(remoteUrl).toBe(getGitUrlWithCredential(exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken));
+      // github use https://${username}:${accessToken}@github.com/ format
+      expect(remoteUrl.includes('@')).toBe(true);
+      expect(remoteUrl.includes(exampleToken)).toBe(true);
+      expect(remoteUrl.endsWith('.git')).toBe(true);
+    });
+
+    test('it has a credential-free remote with .git suffix after calling credentialOff', async () => {
+      await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken);
+      await credentialOff(dir);
+      const remoteUrl = await getRemoteUrl(dir);
+      expect(remoteUrl.length).toBeGreaterThan(0);
+      expect(remoteUrl).toBe(exampleRemoteUrl);
+      expect(remoteUrl.includes('@')).toBe(false);
+      expect(remoteUrl.includes(exampleToken)).toBe(false);
+      expect(remoteUrl.endsWith('.git')).toBe(false);
+    });
   });
 });
