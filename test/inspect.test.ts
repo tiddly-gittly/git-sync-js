@@ -172,7 +172,7 @@ describe('getSyncState', () => {
     expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('noUpstream');
   });
 
-  describe('Add a bare repo as the upstream', () => {
+  describe('Add a repo as the upstream', () => {
     beforeEach(async () => {
       await GitProcess.exec(['remote', 'add', 'origin', upstreamDir], dir);
       /**
@@ -185,7 +185,7 @@ describe('getSyncState', () => {
           'git <command> [<revision>...] -- [<file>...]'
        * ```
        */
-      await GitProcess.exec(['fetch', 'origin'], dir);
+      await GitProcess.exec(['fetch', 'origin', defaultGitInfo.branch], dir);
     });
 
     test('have a mock upstream', async () => {
@@ -209,11 +209,32 @@ describe('getSyncState', () => {
     test('behind after modify the remote', async () => {
       await addSomeFiles(upstreamDir);
       await GitProcess.exec(['add', '.'], upstreamDir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
       await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], upstreamDir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', 'origin'], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
+    });
+
+    test('diverged after modify both remote and local', async () => {
+      await addSomeFiles(upstreamDir);
+      await GitProcess.exec(['add', '.'], upstreamDir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], upstreamDir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+
+      await addSomeFiles(dir);
+      await GitProcess.exec(['add', '.'], dir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      // if use same file and same commit message, it will be equal than diverged in the end
+      await GitProcess.exec(['commit', '-m', 'some different commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+      // not latest remote data, so we thought we are ahead
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+
+      // it is equal until we fetch the latest remote
+      await GitProcess.exec(['fetch', 'origin'], dir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('diverged');
     });
   });
 });

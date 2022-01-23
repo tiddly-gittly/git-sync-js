@@ -213,10 +213,10 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
  * @param dir repo path
  */
 export async function getGitDirectory(dir: string, logger?: ILogger): Promise<string> {
-  const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getSyncState', step, dir });
+  const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getGitDirectory', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
-      functionName: 'getSyncState',
+      functionName: 'getGitDirectory',
       step,
       dir,
     });
