@@ -2,7 +2,7 @@
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
 import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteUrl, hasGit } from '../src/inspect';
-import { credentialOff, credentialOn, getGitUrlWithCredential } from '../src/credential';
+import { credentialOff, credentialOn, getGitUrlWithCredential, getGitUrlWithCredentialAndSuffix } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir, exampleRemoteUrl, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
@@ -89,7 +89,7 @@ describe('getRemoteUrl', () => {
       await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken);
       const remoteUrl = await getRemoteUrl(dir);
       expect(remoteUrl.length).toBeGreaterThan(0);
-      expect(remoteUrl).toBe(getGitUrlWithCredential(exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken));
+      expect(remoteUrl).toBe(getGitUrlWithCredentialAndSuffix(getGitUrlWithCredential(exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken)));
       // github use https://${username}:${accessToken}@github.com/ format
       expect(remoteUrl.includes('@')).toBe(true);
       expect(remoteUrl.includes(exampleToken)).toBe(true);

@@ -68,7 +68,7 @@ export async function getRemoteUrl(dir: string): Promise<string> {
   const remotes = await listRemotes({ fs, dir });
   const githubRemote = remotes.find(({ remote }) => remote === 'origin') ?? remotes[0];
   if ((githubRemote?.url?.length ?? 0) > 0) {
-    return githubRemote!.url.replace('.git', '');
+    return githubRemote!.url;
   }
   return '';
 }
