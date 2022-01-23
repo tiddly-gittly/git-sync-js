@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
-import { getDefaultBranchName, getGitDirectory, getModifiedFileList, hasGit } from '../src/inspect';
+import { GitProcess } from 'dugite';
+import { getDefaultBranchName, getGitDirectory, getModifiedFileList, getRemoteUrl, hasGit } from '../src/inspect';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir, gitDirectory, gitSyncRepoDirectoryGitDirectory } from './constants';
 
@@ -35,9 +36,15 @@ describe('getDefaultBranchName', () => {
     const branch = await getDefaultBranchName(dir);
     expect(branch).toBe('main');
   });
+
+  test("But if we are still using master because there wasn't a black man slavery history in Chinese", async () => {
+    await GitProcess.exec(['branch', '-m', 'main', 'master'], dir);
+    const branch = await getDefaultBranchName(dir);
+    expect(branch).toBe('master');
+  });
 });
 
-describe.only('getModifiedFileList', () => {
+describe('getModifiedFileList', () => {
   /** from https://stackoverflow.com/questions/39062595/how-can-i-create-a-png-blob-from-binary-data-in-a-typed-array */
   const exampleImageBuffer = Buffer.from(
     new Uint8Array([
@@ -57,7 +64,7 @@ describe.only('getModifiedFileList', () => {
     ]);
   });
 
-  test.only('list multiple CJK file names', async () => {
+  test('list multiple CJK file names', async () => {
     const paths: [string, string] = [`${dir}/试试啊.json`, `${dir}/一个破图片.png`];
     await fs.writeJSON(paths[0], { test: 'test' });
     await fs.writeFile(paths[1], exampleImageBuffer);
