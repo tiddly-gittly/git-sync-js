@@ -2,8 +2,10 @@
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
 import {
+  assumeSync,
   getDefaultBranchName,
   getGitDirectory,
+  getGitRepositoryState,
   getModifiedFileList,
   getRemoteRepoName,
   getRemoteUrl,
@@ -14,6 +16,7 @@ import {
 } from '../src/inspect';
 import { credentialOff, credentialOn, getGitUrlWithCredential, getGitUrlWithCredentialAndSuffix } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
+import { AssumeSyncError } from '../src/errors';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -29,11 +32,8 @@ import {
 import { addSomeFiles } from './utils';
 
 describe('getGitDirectory', () => {
-  test('echo the git dir', async () => {
+  test('echo the git dir, hasGit is true', async () => {
     expect(await getGitDirectory(dir)).toBe(gitDirectory);
-  });
-
-  test('hasGit is true', async () => {
     expect(await hasGit(dir)).toBe(true);
   });
 
@@ -167,7 +167,7 @@ describe('haveLocalChanges', () => {
   });
 });
 
-describe('getSyncState', () => {
+describe('getSyncState and getGitRepositoryState', () => {
   test('It should have no upstream by default', async () => {
     expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('noUpstream');
   });
@@ -193,6 +193,7 @@ describe('getSyncState', () => {
     });
     test('equal to upstream', async () => {
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await assumeSync(dir, defaultGitInfo.branch)).toBe(undefined);
     });
     test('still equal there are newly added files', async () => {
       await addSomeFiles();
@@ -204,6 +205,7 @@ describe('getSyncState', () => {
       await GitProcess.exec(['add', '.'], dir);
       await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
     });
 
     test('behind after modify the remote', async () => {
@@ -215,6 +217,7 @@ describe('getSyncState', () => {
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', 'origin'], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
     });
 
     test('diverged after modify both remote and local', async () => {
@@ -235,6 +238,28 @@ describe('getSyncState', () => {
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', 'origin'], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('diverged');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
     });
+  });
+});
+
+describe('getGitRepositoryState', () => {
+  test('normal git state', async () => {
+    expect(await getGitRepositoryState(dir)).toBe('');
+
+    await addSomeFiles(dir);
+    await GitProcess.exec(['add', '.'], dir);
+    await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+    expect(await getGitRepositoryState(dir)).toBe('');
+  });
+
+  test("'when no git, it say NOGIT", async () => {
+    await fs.remove(gitDirectory);
+    expect(await getGitRepositoryState(dir)).toBe('NOGIT');
+  });
+
+  test('dirty when there are some files', async () => {
+    await addSomeFiles(dir);
+    expect(await getGitRepositoryState(dir)).toBe('|DIRTY');
   });
 });
