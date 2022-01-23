@@ -9,6 +9,9 @@ import url from 'url';
 import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
 
+const gitEscapeToEncodedUri = (str: string): string => str.replace(/\\(\d{3})/g, (_: unknown, $1: string) => `%${Number.parseInt($1, 8).toString(16)}`);
+const decodeGitEscape = (rawString: string): string => decodeURIComponent(gitEscapeToEncodedUri(rawString));
+
 export interface ModifiedFileList {
   type: string;
   fileRelativePath: string;
@@ -41,16 +44,12 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
        * So simply `decodeURIComponent(escape` will work on `tiddlers/\346\226\260\346\235\241\347\233\256.tid` (the logged string), but not on `tiddlers/\\346\\226\\260\\346\\235\\241\\347\\233\\256.tid` (the actual string).
        * So how to transform actual string to logged string? Answer is `eval()` it. But we have to check is there any evil script use `;` or `,` mixed into the filename.
        *
-       * // TODO: 不应该按照三个一组解析，因为只有 0x0800 - 0xffff 之间的才被编码到三字节；所以应该直接把所有的 \\\d{3} 全都替换成 % 加十六进制，然后交给 decode 看天意解析就行了
+       * But actually those 346 226 are in radix 8 , if we transform it to radix 16 and add prefix % we can make it uri component.
+       * And it should not be parsed in groups of three, because only the CJK between 0x0800 - 0xffff are encoded into three bytes; so we should just replace all the \\\d{3} with hexadecimal, and then give it to the decodeURIComponent to parse.
        */
       const isSafeUtf8UnescapedString =
         rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') && !rawFileRelativePath.includes(',');
-      function decode(str: string): string {
-        return str.replace(/\\(\d{3})\\(\d{3})\\(\d{3})/g, (_: unknown, $1: string, $2: string, $3: string) =>
-          decodeURIComponent(`%${Number.parseInt($1, 8).toString(16)}%${Number.parseInt($2, 8).toString(16)}%${Number.parseInt($3, 8).toString(16)}`),
-        );
-      }
-      const fileRelativePath = isSafeUtf8UnescapedString ? decode(rawFileRelativePath).replace(/^"/, '').replace(/"$/, '') : rawFileRelativePath;
+      const fileRelativePath = isSafeUtf8UnescapedString ? decodeGitEscape(rawFileRelativePath).replace(/^"/, '').replace(/"$/, '') : rawFileRelativePath;
       return {
         type,
         fileRelativePath,

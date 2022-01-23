@@ -57,7 +57,7 @@ describe.only('getModifiedFileList', () => {
     ]);
   });
 
-  test('list multiple CJK file names', async () => {
+  test.only('list multiple CJK file names', async () => {
     const paths: [string, string] = [`${dir}/试试啊.json`, `${dir}/一个破图片.png`];
     await fs.writeJSON(paths[0], { test: 'test' });
     await fs.writeFile(paths[1], exampleImageBuffer);
