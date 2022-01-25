@@ -7,6 +7,7 @@ import { AssumeSyncError } from '../src/errors';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
+  gitDirectory,
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
@@ -14,10 +15,10 @@ import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
 import { commitFiles } from '../src/sync';
 import { initGit } from '../src/initGit';
 
-describe.skip('initGit', () => {
+describe('initGit', () => {
   beforeEach(async () => {
-    // remove dir in this test suit, so we have a clean slate to init
-    await fs.remove(dir);
+    // remove dir's .git folder in this test suit, so we have a clean folder to init
+    await fs.remove(gitDirectory);
   });
 
   const testBranchName = 'test-branch';
@@ -26,12 +27,12 @@ describe.skip('initGit', () => {
     expect(await hasGit(dir)).toBe(true);
     expect(await haveLocalChanges(dir)).toBe(false);
     expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('noUpstream');
-    await expect(await getDefaultBranchName(dir)).resolves.toBe(testBranchName);
+    expect(await getDefaultBranchName(dir)).toBe(testBranchName);
   });
 
   test('Fallback to default info', async () => {
     await initGit({ dir, syncImmediately: false, defaultGitInfo: { ...defaultGitInfo, branch: testBranchName } });
-    await expect(await getDefaultBranchName(dir)).resolves.toBe(testBranchName);
+    expect(await getDefaultBranchName(dir)).toBe(testBranchName);
   });
 
   test("Don't use fallback if have provided info", async () => {
@@ -41,7 +42,7 @@ describe.skip('initGit', () => {
       userInfo: { ...defaultGitInfo, branch: testBranchName },
       defaultGitInfo: { ...defaultGitInfo, branch: testBranchName + '-bad' },
     });
-    await expect(await getDefaultBranchName(dir)).resolves.toBe(testBranchName);
+    expect(await getDefaultBranchName(dir)).toBe(testBranchName);
   });
 
   describe.skip('with upstream', () => {
