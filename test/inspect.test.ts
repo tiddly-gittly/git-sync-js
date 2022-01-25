@@ -29,7 +29,7 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
-import { addSomeFiles } from './utils';
+import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
 
 describe('getGitDirectory', () => {
   test('echo the git dir, hasGit is true', async () => {
@@ -159,9 +159,7 @@ describe('haveLocalChanges', () => {
     });
 
     test('No change after commit', async () => {
-      await GitProcess.exec(['add', '.'], dir);
-      expect(await haveLocalChanges(dir)).toBe(true);
-      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+      await addAndCommitUsingDugite(dir, async () => expect(await haveLocalChanges(dir)).toBe(true));
       expect(await haveLocalChanges(dir)).toBe(false);
     });
   });
@@ -174,18 +172,7 @@ describe('getSyncState and getGitRepositoryState', () => {
 
   describe('Add a repo as the upstream', () => {
     beforeEach(async () => {
-      await GitProcess.exec(['remote', 'add', 'origin', upstreamDir], dir);
-      /**
-       * Need to fetch the remote repo first, otherwise it will say:
-       * 
-       * ```
-       * % git rev-list --count --left-right origin/main...HEAD        
-          fatal: ambiguous argument 'origin/main...HEAD': unknown revision or path not in the working tree.
-          Use '--' to separate paths from revisions, like this:
-          'git <command> [<revision>...] -- [<file>...]'
-       * ```
-       */
-      await GitProcess.exec(['fetch', 'origin', defaultGitInfo.branch], dir);
+      await addAnUpstream();
     });
 
     test('have a mock upstream', async () => {
@@ -202,17 +189,14 @@ describe('getSyncState and getGitRepositoryState', () => {
 
     test('ahead after commit', async () => {
       await addSomeFiles();
-      await GitProcess.exec(['add', '.'], dir);
-      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+      await addAndCommitUsingDugite();
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
       await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
     });
 
     test('behind after modify the remote', async () => {
       await addSomeFiles(upstreamDir);
-      await GitProcess.exec(['add', '.'], upstreamDir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
-      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], upstreamDir);
+      await addAndCommitUsingDugite(upstreamDir, async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'));
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', 'origin'], dir);
@@ -222,16 +206,16 @@ describe('getSyncState and getGitRepositoryState', () => {
 
     test('diverged after modify both remote and local', async () => {
       await addSomeFiles(upstreamDir);
-      await GitProcess.exec(['add', '.'], upstreamDir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
-      await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], upstreamDir);
+      await addAndCommitUsingDugite(upstreamDir, async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'));
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
 
       await addSomeFiles(dir);
-      await GitProcess.exec(['add', '.'], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
       // if use same file and same commit message, it will be equal than diverged in the end
-      await GitProcess.exec(['commit', '-m', 'some different commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+      await addAndCommitUsingDugite(
+        dir,
+        async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'),
+        'some different commit message',
+      );
       // not latest remote data, so we thought we are ahead
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
 
@@ -248,8 +232,7 @@ describe('getGitRepositoryState', () => {
     expect(await getGitRepositoryState(dir)).toBe('');
 
     await addSomeFiles(dir);
-    await GitProcess.exec(['add', '.'], dir);
-    await GitProcess.exec(['commit', '-m', 'some commit message', `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], dir);
+    await addAndCommitUsingDugite();
     expect(await getGitRepositoryState(dir)).toBe('');
   });
 
