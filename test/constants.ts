@@ -6,8 +6,8 @@ import path from 'path';
  * mockRepoLocation
  */
 // eslint-disable-next-line unicorn/prevent-abbreviations
-export const dir = path.join(__dirname, 'mockRepo');
-export const upstreamDir = path.join(__dirname, 'mockUpstreamRepo');
+export const dir = path.join(__dirname, 'mockRepo', Math.random().toString());
+export const upstreamDir = path.join(__dirname, 'mockUpstreamRepo', Math.random().toString());
 
 export const gitDirectory = path.join(dir, '.git');
 export const gitSyncRepoDirectory = path.join(__dirname, '..');

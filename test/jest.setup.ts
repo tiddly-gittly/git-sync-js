@@ -16,10 +16,10 @@ beforeEach(async () => {
 
 async function setUpMockGitRepositories() {
   if (!(await fs.pathExists(dir))) {
-    await fs.mkdir(dir);
+    await fs.mkdirp(dir);
   }
   if (!(await fs.pathExists(upstreamDir))) {
-    await fs.mkdir(upstreamDir);
+    await fs.mkdirp(upstreamDir);
   }
   await initGitWithBranch(dir);
   await initGitWithBranch(upstreamDir);
