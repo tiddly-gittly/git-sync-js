@@ -1,13 +1,18 @@
+/* eslint-disable security-node/detect-insecure-randomness */
 /* eslint-disable unicorn/prevent-abbreviations */
 /* eslint-disable unicorn/prefer-module */
 import path from 'path';
 
 /**
+ * Random dir name to prevent parallel test execution collision
+ */
+const repoName = Math.random().toString();
+/**
  * mockRepoLocation
  */
 // eslint-disable-next-line unicorn/prevent-abbreviations
-export const dir = path.join(__dirname, 'mockRepo', Math.random().toString());
-export const upstreamDir = path.join(__dirname, 'mockUpstreamRepo', Math.random().toString());
+export const dir = path.join(__dirname, 'mockRepo', repoName);
+export const upstreamDir = path.join(__dirname, 'mockUpstreamRepo', repoName);
 
 export const gitDirectory = path.join(dir, '.git');
 export const gitSyncRepoDirectory = path.join(__dirname, '..');
