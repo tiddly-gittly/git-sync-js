@@ -18,7 +18,7 @@ export async function commitFiles(
   dir: string,
   username: string,
   email: string,
-  message = 'Initialize with TiddlyGit-Desktop',
+  message = 'Commit with Git-Sync-JS',
   filesToIgnore: string[] = [],
   logger?: ILogger,
 ): Promise<IGitResult> {
