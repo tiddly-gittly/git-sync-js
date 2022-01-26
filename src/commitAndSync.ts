@@ -19,7 +19,7 @@ export async function commitAndSync(options: {
   /** the commit message */
   commitMessage?: string;
   logger?: ILogger;
-  defaultGitInfo: typeof defaultDefaultGitInfo;
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** if you want to use a dynamic .gitignore, you can passing an array contains filepaths that want to ignore */
   filesToIgnore?: string[];
 }): Promise<void> {

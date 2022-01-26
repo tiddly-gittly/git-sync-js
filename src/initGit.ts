@@ -1,12 +1,10 @@
-import { GitProcess } from 'dugite';
 import { truncate } from 'lodash';
-import { credentialOn, credentialOff } from './credential';
-import { SyncParameterMissingError, GitPullPushError } from './errors';
+import { SyncParameterMissingError } from './errors';
 import { initGitWithBranch } from './init';
-import { getDefaultBranchName } from './inspect';
 import { IGitUserInfosWithoutToken, IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { commitFiles } from './sync';
+import { commitAndSync } from './commitAndSync';
 
 export type IInitGitOptions = IInitGitOptionsSyncImmediately | IInitGitOptionsNotSync;
 export interface IInitGitOptionsSyncImmediately {
@@ -17,7 +15,7 @@ export interface IInitGitOptionsSyncImmediately {
   /** only required if syncImmediately is true, the storage service url we are sync to, for example your github repo url */
   remoteUrl: string;
   /** user info used in the commit message */
-  userInfo: IGitUserInfosWithoutToken & IGitUserInfos;
+  userInfo: IGitUserInfos;
   logger?: ILogger;
   defaultGitInfo?: typeof defaultDefaultGitInfo;
 }
@@ -62,23 +60,11 @@ export async function initGit(options: IInitGitOptions): Promise<void> {
     throw new SyncParameterMissingError('remoteUrl');
   }
   logDebug(
-    `Using gitUrl ${remoteUrl} with gitUserName ${gitUserName} and accessToken ${truncate(userInfo?.accessToken, {
+    `Calling commitAndSync() from initGit() Using gitUrl ${remoteUrl} with gitUserName ${gitUserName} and accessToken ${truncate(userInfo?.accessToken, {
       length: 24,
     })}`,
     GitStep.StartConfiguringGithubRemoteRepository,
   );
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
-  await credentialOn(dir, remoteUrl, gitUserName, userInfo?.accessToken);
-  logProgress(GitStep.FetchingData);
-  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
-  await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
-  logProgress(GitStep.StartBackupToGitRemote);
-  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
-  await credentialOff(dir, remoteUrl);
-  if (pushExitCode !== 0) {
-    logProgress(GitStep.GitPushFailed);
-    throw new GitPullPushError(options, `branch: ${defaultBranchName} ${pushStdError}`);
-  } else {
-    logProgress(GitStep.SynchronizationFinish);
-  }
+  await commitAndSync(options);
 }
