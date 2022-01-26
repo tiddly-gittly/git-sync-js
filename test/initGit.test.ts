@@ -45,7 +45,7 @@ describe('initGit', () => {
     expect(await getDefaultBranchName(dir)).toBe(testBranchName);
   });
 
-  describe.skip('with upstream', () => {
+  describe('with upstream', () => {
     beforeEach(async () => {
       await addAnUpstream();
     });
@@ -56,6 +56,8 @@ describe('initGit', () => {
         syncImmediately: false,
         defaultGitInfo,
       });
+      // nested describe > beforeEach execute first, so after we add upstream, the .git folder is deleted and recreated, we need to manually fetch here
+      await GitProcess.exec(['fetch', 'origin', defaultGitInfo.branch], dir);
       // basically same as other test suit
       const sharedCommitMessage = 'some commit message';
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
