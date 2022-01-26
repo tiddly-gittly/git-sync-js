@@ -22,18 +22,18 @@ describe('commitFiles', () => {
 
     test('equal to upstream that using dugite add', async () => {
       const sharedCommitMessage = 'some commit message';
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
   });
 
@@ -55,13 +55,13 @@ describe('pushUpstream', () => {
     });
 
     test('equal to upstream after push', async () => {
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
 
       await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
   });
 });
@@ -73,13 +73,13 @@ describe('mergeUpstream', () => {
     });
 
     test('equal to upstream after pull', async () => {
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
       await addSomeFiles(upstreamDir);
       await commitFiles(upstreamDir, defaultGitInfo.gitUserName, defaultGitInfo.email);
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
       await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
   });
 });

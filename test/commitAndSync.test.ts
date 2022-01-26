@@ -23,9 +23,9 @@ describe('commitAndSync', () => {
   });
 
   test('equal to upstream that been commitAndSync to', async () => {
-    expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     await addSomeFiles();
     await commitAndSync(getCommitAndSyncOptions());
-    expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
   });
 });

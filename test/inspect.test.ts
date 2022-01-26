@@ -188,7 +188,7 @@ describe('haveLocalChanges', () => {
 
 describe('getSyncState and getGitRepositoryState', () => {
   test('It should have no upstream by default', async () => {
-    expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('noUpstream');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstream');
   });
 
   describe('Add a repo as the upstream', () => {
@@ -200,50 +200,54 @@ describe('getSyncState and getGitRepositoryState', () => {
       expect(await getRemoteUrl(dir, defaultGitInfo.remote)).toBe(upstreamDir);
     });
     test('equal to upstream', async () => {
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
-      expect(await assumeSync(dir, defaultGitInfo.branch)).toBe(undefined);
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+      expect(await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe(undefined);
     });
     test('still equal there are newly added files', async () => {
       await addSomeFiles();
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
 
     test('ahead after commit', async () => {
       await addSomeFiles();
       await addAndCommitUsingDugite();
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
     });
 
     test('behind after modify the remote', async () => {
       await addSomeFiles(upstreamDir);
-      await addAndCommitUsingDugite(upstreamDir, async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'));
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      await addAndCommitUsingDugite(upstreamDir, async () =>
+        expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal'),
+      );
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('behind'));
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('behind'));
     });
 
     test('diverged after modify both remote and local', async () => {
       await addSomeFiles(upstreamDir);
-      await addAndCommitUsingDugite(upstreamDir, async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'));
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      await addAndCommitUsingDugite(upstreamDir, async () =>
+        expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal'),
+      );
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
 
       await addSomeFiles(dir);
       // if use same file and same commit message, it will be equal than diverged in the end
       await addAndCommitUsingDugite(
         dir,
-        async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'),
+        async () => expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal'),
         'some different commit message',
       );
       // not latest remote data, so we thought we are ahead
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
 
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('diverged');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('diverged'));
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('diverged');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('diverged'));
     });
   });
 });

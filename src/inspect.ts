@@ -119,7 +119,7 @@ export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged'
  * 'ahead' means our local state is ahead of remote, 'behind' means local state is behind of the remote
  * @param dir repo path to test
  */
-export async function getSyncState(dir: string, defaultBranchName: string, remoteName?: string, logger?: ILogger): Promise<SyncState> {
+export async function getSyncState(dir: string, defaultBranchName: string, remoteName: string, logger?: ILogger): Promise<SyncState> {
   const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
@@ -149,7 +149,7 @@ export async function getSyncState(dir: string, defaultBranchName: string, remot
   return 'diverged';
 }
 
-export async function assumeSync(wikiFolderPath: string, defaultBranchName: string, remoteName?: string | undefined, logger?: ILogger): Promise<void> {
+export async function assumeSync(wikiFolderPath: string, defaultBranchName: string, remoteName: string, logger?: ILogger): Promise<void> {
   const syncState = await getSyncState(wikiFolderPath, defaultBranchName, remoteName, logger);
   if (syncState === 'equal') {
     return;

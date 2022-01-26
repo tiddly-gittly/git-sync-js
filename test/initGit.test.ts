@@ -27,7 +27,7 @@ describe('initGit', () => {
     await initGit({ dir, syncImmediately: false, userInfo: { ...defaultGitInfo, branch: testBranchName } });
     expect(await hasGit(dir)).toBe(true);
     expect(await haveLocalChanges(dir)).toBe(false);
-    expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('noUpstream');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstream');
     expect(await getDefaultBranchName(dir)).toBe(testBranchName);
   });
 
@@ -61,18 +61,18 @@ describe('initGit', () => {
       await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
       // basically same as other test suit
       const sharedCommitMessage = 'some commit message';
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
 
     test('syncImmediately to get equal state', async () => {
@@ -84,18 +84,18 @@ describe('initGit', () => {
       });
       // basically same as other test suit
       const sharedCommitMessage = 'some commit message';
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
   });
 });

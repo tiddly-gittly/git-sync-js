@@ -24,7 +24,7 @@ async function setUpMockGitRepositories() {
     await fs.mkdirp(upstreamDir);
   }
   await initGitWithBranch(dir);
-  await initGitWithBranch(upstreamDir, defaultGitInfo.branch, true);
+  await initGitWithBranch(upstreamDir, defaultGitInfo.branch);
 }
 
 async function resetMockGitRepositories() {
