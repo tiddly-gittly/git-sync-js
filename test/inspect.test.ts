@@ -159,7 +159,7 @@ describe('getRemoteRepoName', () => {
   });
 });
 
-describe.only('getRemoteName', () => {
+describe('getRemoteName', () => {
   test('Get default origin when no config found', async () => {
     const remoteName = await getRemoteName(dir, defaultGitInfo.branch);
     expect(remoteName).toBe(defaultGitInfo.remote);
