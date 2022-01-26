@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir, setGlobalConstants, upstreamDir } from './constants';
 import { initGitWithBranch } from '../src/init';
+import { defaultGitInfo } from '../src/defaultGitInfo';
 
 beforeEach(async () => {
   setGlobalConstants();
@@ -23,7 +24,7 @@ async function setUpMockGitRepositories() {
     await fs.mkdirp(upstreamDir);
   }
   await initGitWithBranch(dir);
-  await initGitWithBranch(upstreamDir);
+  await initGitWithBranch(upstreamDir, defaultGitInfo.branch, true);
 }
 
 async function resetMockGitRepositories() {

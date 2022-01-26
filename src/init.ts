@@ -5,8 +5,8 @@ import { defaultGitInfo } from './defaultGitInfo';
 /**
  * Init and immediately checkout the branch, other wise the branch will be HEAD, which is annoying in the later steps
  */
-export async function initGitWithBranch(dir: string, branch = defaultGitInfo.branch): Promise<void> {
-  await GitProcess.exec(['init', `--initial-branch=${branch}`], dir);
+export async function initGitWithBranch(dir: string, branch = defaultGitInfo.branch, bare = false): Promise<void> {
+  await GitProcess.exec(['init', `--initial-branch=${branch}`, bare ? '--bare' : ''], dir);
   /**
    * try fix https://stackoverflow.com/questions/12267912/git-error-fatal-ambiguous-argument-head-unknown-revision-or-path-not-in-the
    *

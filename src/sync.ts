@@ -62,7 +62,7 @@ export async function pushUpstream(dir: string, branch: string, remoteName: stri
   /** when push to remote, we need to specify the local branch name and remote branch name */
   const branchMapping = `${branch}:${branch}`;
   logProgress(GitStep.GitPush);
-  const pushResult = await GitProcess.exec(['push', '-f', remoteName, branchMapping], dir);
+  const pushResult = await GitProcess.exec(['push', remoteName, branchMapping], dir);
   logProgress(GitStep.GitPushComplete);
   if (pushResult.exitCode !== 0) {
     throw new GitPullPushError({ dir, branch, remote: remoteName }, pushResult.stdout + pushResult.stderr);
