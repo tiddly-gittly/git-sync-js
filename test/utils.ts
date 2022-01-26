@@ -1,8 +1,9 @@
 import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
+import { initGitWithBranch } from '../src/init';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, exampleImageBuffer, upstreamDir } from './constants';
+import { dir, exampleImageBuffer, upstreamDir, upstreamDirGitDirectory } from './constants';
 
 export async function addSomeFiles<T extends [string, string]>(location = dir): Promise<T> {
   const paths: T = [`${location}/image.png`, `${location}/test.json`] as T;
@@ -35,4 +36,10 @@ export async function addAndCommitUsingDugite(
   await GitProcess.exec(['add', '.'], location);
   await runBetween();
   await GitProcess.exec(['commit', '-m', message, `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], location);
+}
+
+export async function addBareUpstream(): Promise<void> {
+  await fs.remove(upstreamDirGitDirectory);
+  await initGitWithBranch(upstreamDir, defaultGitInfo.branch, true);
+  await addAnUpstream();
 }

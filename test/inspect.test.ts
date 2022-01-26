@@ -188,7 +188,7 @@ describe('haveLocalChanges', () => {
 
 describe('getSyncState and getGitRepositoryState', () => {
   test('It should have no upstream by default', async () => {
-    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstream');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
   });
 
   describe('Add a repo as the upstream', () => {

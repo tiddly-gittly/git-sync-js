@@ -27,7 +27,7 @@ describe('initGit', () => {
     await initGit({ dir, syncImmediately: false, userInfo: { ...defaultGitInfo, branch: testBranchName } });
     expect(await hasGit(dir)).toBe(true);
     expect(await haveLocalChanges(dir)).toBe(false);
-    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstream');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
     expect(await getDefaultBranchName(dir)).toBe(testBranchName);
   });
 

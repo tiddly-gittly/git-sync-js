@@ -101,9 +101,12 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       await credentialOff(dir, remoteUrl);
       return;
     }
-    case 'noUpstream': {
+    case 'noUpstreamOrBareUpstream': {
       logProgress(GitStep.NoUpstreamCantPush);
-      throw new GitPullPushError({ dir, remoteUrl, userInfo }, `Step: ${GitStep.NoUpstreamCantPush}, remoteUrl is not valid, noUpstream after credentialOn`);
+      throw new GitPullPushError(
+        { dir, remoteUrl, userInfo },
+        `Step: ${GitStep.NoUpstreamCantPush}, remoteUrl is not valid, noUpstreamOrBareUpstream after credentialOn`,
+      );
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);

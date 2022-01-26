@@ -10,11 +10,9 @@ import {
   dir,
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
-  upstreamDirGitDirectory,
 } from './constants';
-import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
+import { addAndCommitUsingDugite, addAnUpstream, addBareUpstream, addSomeFiles } from './utils';
 import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
-import { initGitWithBranch } from '../src/init';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -53,16 +51,13 @@ describe('commitFiles', () => {
 describe('pushUpstream', () => {
   describe('with upstream', () => {
     beforeEach(async () => {
-      await fs.remove(upstreamDirGitDirectory);
-      await initGitWithBranch(upstreamDir, defaultGitInfo.branch, true);
-      await addAnUpstream();
+      await addBareUpstream();
     });
 
     test('equal to upstream after push', async () => {
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
 
       await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');

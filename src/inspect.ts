@@ -113,7 +113,7 @@ export async function getDefaultBranchName(wikiFolderPath: string): Promise<stri
   return branchName;
 }
 
-export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged';
+export type SyncState = 'noUpstreamOrBareUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged';
 /**
  * determine sync state of repository, i.e. how the remote relates to our HEAD
  * 'ahead' means our local state is ahead of remote, 'behind' means local state is behind of the remote
@@ -135,7 +135,7 @@ export async function getSyncState(dir: string, defaultBranchName: string, remot
     logDebug(`Have problem checking sync state with upstream,stderr:\n${stderr}\n(stderr end)`, GitStep.CheckingLocalSyncState);
   }
   if (stdout === '') {
-    return 'noUpstream';
+    return 'noUpstreamOrBareUpstream';
   }
   if (/0\t0/.exec(stdout) !== null) {
     return 'equal';
