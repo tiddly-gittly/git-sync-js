@@ -12,7 +12,7 @@ import {
   upstreamDir,
 } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
-import { commitFiles, pushUpstream } from '../src/sync';
+import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -61,6 +61,24 @@ describe('pushUpstream', () => {
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
 
       await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    });
+  });
+});
+
+describe('mergeUpstream', () => {
+  describe('with upstream', () => {
+    beforeEach(async () => {
+      await addAnUpstream();
+    });
+
+    test('equal to upstream after pull', async () => {
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      await addSomeFiles(upstreamDir);
+      await commitFiles(upstreamDir, defaultGitInfo.gitUserName, defaultGitInfo.email);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
+      await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     });
   });
