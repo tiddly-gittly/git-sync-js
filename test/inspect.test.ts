@@ -14,7 +14,7 @@ import {
   haveLocalChanges,
   SyncState,
 } from '../src/inspect';
-import { credentialOff, credentialOn, getGitUrlWithCredential, getGitUrlWithCredentialAndSuffix } from '../src/credential';
+import { credentialOff, credentialOn, getGitUrlWithCredential } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
 import {
@@ -30,6 +30,7 @@ import {
   upstreamDir,
 } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
+import { getGitUrlWithGitSuffix, getGitUrlWithOutGitSuffix } from '../src/utils';
 
 describe('getGitDirectory', () => {
   test('echo the git dir, hasGit is true', async () => {
@@ -100,11 +101,12 @@ describe('getRemoteUrl', () => {
       await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken);
       const remoteUrl = await getRemoteUrl(dir);
       expect(remoteUrl.length).toBeGreaterThan(0);
-      expect(remoteUrl).toBe(getGitUrlWithCredentialAndSuffix(getGitUrlWithCredential(exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken)));
+      expect(remoteUrl).toBe(getGitUrlWithCredential(exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken));
       // github use https://${username}:${accessToken}@github.com/ format
       expect(remoteUrl.includes('@')).toBe(true);
       expect(remoteUrl.includes(exampleToken)).toBe(true);
-      expect(remoteUrl.endsWith('.git')).toBe(true);
+      // we want user add .git himself before credentialOn
+      expect(remoteUrl.endsWith('.git')).toBe(false);
     });
 
     test('it has a credential-free remote with .git suffix after calling credentialOff', async () => {
@@ -116,6 +118,17 @@ describe('getRemoteUrl', () => {
       expect(remoteUrl.includes('@')).toBe(false);
       expect(remoteUrl.includes(exampleToken)).toBe(false);
       expect(remoteUrl.endsWith('.git')).toBe(false);
+    });
+
+    test('it keeps .git suffix, letting user add and remove it', async () => {
+      const exampleRemoteUrlWithSuffix = getGitUrlWithGitSuffix(exampleRemoteUrl);
+      expect(exampleRemoteUrlWithSuffix.endsWith('.git')).toBe(true);
+      await credentialOn(dir, exampleRemoteUrlWithSuffix, defaultGitInfo.gitUserName, exampleToken);
+      await credentialOff(dir);
+      const remoteUrl = await getRemoteUrl(dir);
+      expect(remoteUrl.endsWith('.git')).toBe(true);
+      const remoteUrlWithoutSuffix = getGitUrlWithOutGitSuffix(remoteUrl);
+      expect(remoteUrlWithoutSuffix.endsWith('.git')).toBe(false);
     });
   });
 });
