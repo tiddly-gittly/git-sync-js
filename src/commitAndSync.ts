@@ -6,23 +6,24 @@ import { IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { commitFiles, continueRebase } from './sync';
 
-/**
- * `git add .` + `git commit` + `git rebase` or something that can sync bi-directional
- */
-export async function commitAndSync(options: {
+export interface ICommitAndSyncOptions {
   /** wiki folder path, can be relative */
   dir: string;
   /** the storage service url we are sync to, for example your github repo url */
-  remoteUrl?: string;
+  remoteUrl: string;
   /** user info used in the commit message */
-  userInfo?: IGitUserInfos;
+  userInfo: IGitUserInfos;
   /** the commit message */
   commitMessage?: string;
   logger?: ILogger;
   defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** if you want to use a dynamic .gitignore, you can passing an array contains filepaths that want to ignore */
   filesToIgnore?: string[];
-}): Promise<void> {
+}
+/**
+ * `git add .` + `git commit` + `git rebase` or something that can sync bi-directional
+ */
+export async function commitAndSync(options: ICommitAndSyncOptions): Promise<void> {
   const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger, defaultGitInfo = defaultDefaultGitInfo, filesToIgnore } = options;
   const { gitUserName, email, branch } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
