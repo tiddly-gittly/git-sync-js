@@ -6,17 +6,37 @@ import path from 'path';
 /**
  * Random dir name to prevent parallel test execution collision
  */
-const repoName = Math.random().toString();
+let repoName = Math.random().toString();
 /**
  * mockRepoLocation
  */
 // eslint-disable-next-line unicorn/prevent-abbreviations
-export const dir = path.join(__dirname, 'mockRepo', repoName);
-export const upstreamDir = path.join(__dirname, 'mockUpstreamRepo', repoName);
+export let dir: string;
+export let upstreamDir: string;
 
-export const gitDirectory = path.join(dir, '.git');
-export const gitSyncRepoDirectory = path.join(__dirname, '..');
-export const gitSyncRepoDirectoryGitDirectory = path.join(gitSyncRepoDirectory, '.git');
+export let gitDirectory: string;
+export let gitSyncRepoDirectory: string;
+export let gitSyncRepoDirectoryGitDirectory: string;
+
+/**
+ * use currentTestName to get better constants, should call in jest functions as early as possible
+ */
+export const setGlobalConstants = (): void => {
+  /**
+   * Random dir name to prevent parallel test execution collision
+   */
+  repoName = expect.getState().currentTestName;
+  /**
+   * mockRepoLocation
+   */
+  // eslint-disable-next-line unicorn/prevent-abbreviations
+  dir = path.join(__dirname, 'mockRepo', repoName);
+  upstreamDir = path.join(__dirname, 'mockUpstreamRepo', repoName);
+
+  gitDirectory = path.join(dir, '.git');
+  gitSyncRepoDirectory = path.join(__dirname, '..');
+  gitSyncRepoDirectoryGitDirectory = path.join(gitSyncRepoDirectory, '.git');
+};
 
 export const exampleRepoName = 'tiddly-gittly/git-sync-js';
 /**
