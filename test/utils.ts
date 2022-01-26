@@ -13,7 +13,7 @@ export async function addSomeFiles<T extends [string, string]>(location = dir): 
 }
 
 export async function addAnUpstream(): Promise<void> {
-  await GitProcess.exec(['remote', 'add', 'origin', upstreamDir], dir);
+  await GitProcess.exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], dir);
   /**
        * Need to fetch the remote repo first, otherwise it will say:
        * 
@@ -24,7 +24,7 @@ export async function addAnUpstream(): Promise<void> {
           'git <command> [<revision>...] -- [<file>...]'
        * ```
        */
-  await GitProcess.exec(['fetch', 'origin', defaultGitInfo.branch], dir);
+  await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
 }
 
 export async function addAndCommitUsingDugite(

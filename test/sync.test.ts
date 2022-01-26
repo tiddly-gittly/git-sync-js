@@ -32,7 +32,7 @@ describe('commitFiles', () => {
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is equal until we fetch the latest remote
-      await GitProcess.exec(['fetch', 'origin'], dir);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     });
   });
@@ -60,7 +60,7 @@ describe('pushUpstream', () => {
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
 
-      await pushUpstream(dir, defaultGitInfo.branch);
+      await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     });
   });

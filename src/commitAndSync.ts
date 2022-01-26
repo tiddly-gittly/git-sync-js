@@ -1,7 +1,7 @@
 import { GitProcess } from 'dugite';
 import { credentialOn, credentialOff } from './credential';
 import { SyncParameterMissingError, GitPullPushError, CantSyncGitNotInitializedError } from './errors';
-import { assumeSync, getDefaultBranchName, getGitRepositoryState, getSyncState, haveLocalChanges } from './inspect';
+import { assumeSync, getDefaultBranchName, getGitRepositoryState, getRemoteName, getSyncState, haveLocalChanges } from './inspect';
 import { IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { commitFiles, continueRebase, pushUpstream } from './sync';
@@ -35,6 +35,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     throw new SyncParameterMissingError('remoteUrl');
   }
   const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
+  const remoteName = await getRemoteName(dir, defaultBranchName);
 
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
@@ -88,12 +89,12 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     logProgress(GitStep.CommitComplete);
   }
   logProgress(GitStep.PreparingUserInfo);
-  await credentialOn(dir, remoteUrl, gitUserName, accessToken);
+  await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.FetchingData);
-  await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
+  await GitProcess.exec(['fetch', remoteName, defaultBranchName], dir);
   let exitCode = 0;
   let stderr: string | undefined;
-  const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, logger);
+  const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, remoteName, logger);
   switch (syncStateAfterCommit) {
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
@@ -106,12 +107,12 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);
-      await pushUpstream(dir, defaultBranchName, logger);
+      await pushUpstream(dir, defaultBranchName, remoteName, logger);
       break;
     }
     case 'behind': {
       logProgress(GitStep.LocalStateBehindSync);
-      ({ exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`], dir));
+      ({ exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `${remoteName}/${defaultBranchName}`], dir));
       if (exitCode === 0) {
         break;
       }
@@ -120,18 +121,22 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     case 'diverged': {
       logProgress(GitStep.LocalStateDivergeRebase);
-      ({ exitCode, stderr } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], dir));
+      ({ exitCode, stderr } = await GitProcess.exec(['rebase', `${remoteName}/${defaultBranchName}`], dir));
       logProgress(GitStep.RebaseResultChecking);
       if (exitCode !== 0) {
         logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseResultChecking);
       }
-      if (exitCode === 0 && (await getGitRepositoryState(dir, logger)).length === 0 && (await getSyncState(dir, defaultBranchName, logger)) === 'ahead') {
+      if (
+        exitCode === 0 &&
+        (await getGitRepositoryState(dir, logger)).length === 0 &&
+        (await getSyncState(dir, defaultBranchName, remoteName, logger)) === 'ahead'
+      ) {
         logProgress(GitStep.RebaseSucceed);
       } else {
         await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
-      await pushUpstream(dir, defaultBranchName, logger);
+      await pushUpstream(dir, defaultBranchName, remoteName, logger);
       break;
     }
     default: {
@@ -141,7 +146,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   await credentialOff(dir, remoteUrl);
   if (exitCode === 0) {
     logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-    await assumeSync(dir, defaultBranchName, logger);
+    await assumeSync(dir, defaultBranchName, remoteName, logger);
     logProgress(GitStep.SynchronizationFinish);
   } else {
     switch (exitCode) {

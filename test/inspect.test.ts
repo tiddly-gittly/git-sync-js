@@ -7,6 +7,7 @@ import {
   getGitDirectory,
   getGitRepositoryState,
   getModifiedFileList,
+  getRemoteName,
   getRemoteRepoName,
   getRemoteUrl,
   getSyncState,
@@ -92,14 +93,14 @@ describe('getModifiedFileList', () => {
 
 describe('getRemoteUrl', () => {
   test("New repo don't have remote", async () => {
-    const remoteUrl = await getRemoteUrl(dir);
+    const remoteUrl = await getRemoteUrl(dir, defaultGitInfo.remote);
     expect(remoteUrl).toBe('');
   });
 
   describe('credential can be added to the remote', () => {
     test('it has remote with token after calling credentialOn', async () => {
-      await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken);
-      const remoteUrl = await getRemoteUrl(dir);
+      await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+      const remoteUrl = await getRemoteUrl(dir, defaultGitInfo.remote);
       expect(remoteUrl.length).toBeGreaterThan(0);
       expect(remoteUrl).toBe(getGitUrlWithCredential(exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken));
       // github use https://${username}:${accessToken}@github.com/ format
@@ -110,9 +111,9 @@ describe('getRemoteUrl', () => {
     });
 
     test('it has a credential-free remote with .git suffix after calling credentialOff', async () => {
-      await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken);
-      await credentialOff(dir);
-      const remoteUrl = await getRemoteUrl(dir);
+      await credentialOn(dir, exampleRemoteUrl, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+      await credentialOff(dir, defaultGitInfo.remote);
+      const remoteUrl = await getRemoteUrl(dir, defaultGitInfo.remote);
       expect(remoteUrl.length).toBeGreaterThan(0);
       expect(remoteUrl).toBe(exampleRemoteUrl);
       expect(remoteUrl.includes('@')).toBe(false);
@@ -123,9 +124,9 @@ describe('getRemoteUrl', () => {
     test('it keeps .git suffix, letting user add and remove it', async () => {
       const exampleRemoteUrlWithSuffix = getGitUrlWithGitSuffix(exampleRemoteUrl);
       expect(exampleRemoteUrlWithSuffix.endsWith('.git')).toBe(true);
-      await credentialOn(dir, exampleRemoteUrlWithSuffix, defaultGitInfo.gitUserName, exampleToken);
-      await credentialOff(dir);
-      const remoteUrl = await getRemoteUrl(dir);
+      await credentialOn(dir, exampleRemoteUrlWithSuffix, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+      await credentialOff(dir, defaultGitInfo.remote);
+      const remoteUrl = await getRemoteUrl(dir, defaultGitInfo.remote);
       expect(remoteUrl.endsWith('.git')).toBe(true);
       const remoteUrlWithoutSuffix = getGitUrlWithOutGitSuffix(remoteUrl);
       expect(remoteUrlWithoutSuffix.endsWith('.git')).toBe(false);
@@ -155,6 +156,13 @@ describe('getRemoteRepoName', () => {
 
   test('Throw when not a url', () => {
     expect(() => getRemoteRepoName('sdfasdf/asdfadsf')).toThrowError(new TypeError('Invalid URL'));
+  });
+});
+
+describe.only('getRemoteName', () => {
+  test('Get default origin when no config found', async () => {
+    const remoteName = await getRemoteName(dir, defaultGitInfo.branch);
+    expect(remoteName).toBe(defaultGitInfo.remote);
   });
 });
 
@@ -189,7 +197,7 @@ describe('getSyncState and getGitRepositoryState', () => {
     });
 
     test('have a mock upstream', async () => {
-      expect(await getRemoteUrl(dir)).toBe(upstreamDir);
+      expect(await getRemoteUrl(dir, defaultGitInfo.remote)).toBe(upstreamDir);
     });
     test('equal to upstream', async () => {
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
@@ -212,7 +220,7 @@ describe('getSyncState and getGitRepositoryState', () => {
       await addAndCommitUsingDugite(upstreamDir, async () => expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal'));
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
       // it is equal until we fetch the latest remote
-      await GitProcess.exec(['fetch', 'origin'], dir);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
       await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('behind'));
     });
@@ -233,7 +241,7 @@ describe('getSyncState and getGitRepositoryState', () => {
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
 
       // it is equal until we fetch the latest remote
-      await GitProcess.exec(['fetch', 'origin'], dir);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('diverged');
       await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('diverged'));
     });

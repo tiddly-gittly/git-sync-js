@@ -64,9 +64,9 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
  * @param dir wiki folder path, git folder to inspect
  * @returns remote url, without `'.git'`
  */
-export async function getRemoteUrl(dir: string): Promise<string> {
+export async function getRemoteUrl(dir: string, remoteName: string): Promise<string> {
   const remotes = await listRemotes({ fs, dir });
-  const githubRemote = remotes.find(({ remote }) => remote === 'origin') ?? remotes[0];
+  const githubRemote = remotes.find(({ remote }) => remote === remoteName) ?? remotes[0];
   if ((githubRemote?.url?.length ?? 0) > 0) {
     return githubRemote!.url;
   }
@@ -119,7 +119,7 @@ export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged'
  * 'ahead' means our local state is ahead of remote, 'behind' means local state is behind of the remote
  * @param dir repo path to test
  */
-export async function getSyncState(dir: string, defaultBranchName: string, logger?: ILogger): Promise<SyncState> {
+export async function getSyncState(dir: string, defaultBranchName: string, remoteName?: string, logger?: ILogger): Promise<SyncState> {
   const logDebug = (message: string, step: GitStep): unknown => logger?.debug?.(message, { functionName: 'getSyncState', step, dir });
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
@@ -128,7 +128,8 @@ export async function getSyncState(dir: string, defaultBranchName: string, logge
       dir,
     });
   logProgress(GitStep.CheckingLocalSyncState);
-  const { stdout, stderr } = await GitProcess.exec(['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`], dir);
+  remoteName = remoteName ?? (await getRemoteName(dir, defaultBranchName));
+  const { stdout, stderr } = await GitProcess.exec(['rev-list', '--count', '--left-right', `${remoteName}/${defaultBranchName}...HEAD`], dir);
   logDebug(`Checking sync state with upstream, stdout:\n${stdout}\n(stdout end)`, GitStep.CheckingLocalSyncState);
   if (stderr.length > 0) {
     logDebug(`Have problem checking sync state with upstream,stderr:\n${stderr}\n(stderr end)`, GitStep.CheckingLocalSyncState);
@@ -148,8 +149,8 @@ export async function getSyncState(dir: string, defaultBranchName: string, logge
   return 'diverged';
 }
 
-export async function assumeSync(wikiFolderPath: string, defaultBranchName: string, logger?: ILogger): Promise<void> {
-  const syncState = await getSyncState(wikiFolderPath, defaultBranchName, logger);
+export async function assumeSync(wikiFolderPath: string, defaultBranchName: string, remoteName?: string | undefined, logger?: ILogger): Promise<void> {
+  const syncState = await getSyncState(wikiFolderPath, defaultBranchName, remoteName, logger);
   if (syncState === 'equal') {
     return;
   }
@@ -265,4 +266,25 @@ export async function hasGit(dir: string, strict = true): Promise<boolean> {
     }
   }
   return true;
+}
+
+/**
+ * get things like "origin"
+ *
+ * https://github.com/simonthum/git-sync/blob/31cc140df2751e09fae2941054d5b61c34e8b649/git-sync#L238-L257
+ */
+export async function getRemoteName(dir: string, branch: string): Promise<string> {
+  let { stdout } = await GitProcess.exec(['config', '--get', `branch.${branch}.pushRemote`], dir);
+  if (stdout.trim()) {
+    return stdout.trim();
+  }
+  ({ stdout } = await GitProcess.exec(['config', '--get', `remote.pushDefault`], dir));
+  if (stdout.trim()) {
+    return stdout.trim();
+  }
+  ({ stdout } = await GitProcess.exec(['config', '--get', `branch.${branch}.remote`], dir));
+  if (stdout.trim()) {
+    return stdout.trim();
+  }
+  return 'origin';
 }

@@ -51,17 +51,17 @@ export async function commitFiles(
  * @param email
  * @param message
  */
-export async function pushUpstream(dir: string, branch: string, logger?: ILogger): Promise<IGitResult> {
+export async function pushUpstream(dir: string, branch: string, remoteName: string, logger?: ILogger): Promise<IGitResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'commitFiles',
       step,
       dir,
     });
-  /** when push to origin, we need to specify the local branch name and remote branch name */
+  /** when push to remote, we need to specify the local branch name and remote branch name */
   const branchMapping = `${branch}:${branch}`;
   logProgress(GitStep.GitPush);
-  const result = await GitProcess.exec(['push', 'origin', branchMapping], dir);
+  const result = await GitProcess.exec(['push', remoteName, branchMapping], dir);
 
   logProgress(GitStep.GitPushComplete);
   if (result.exitCode !== 0) {

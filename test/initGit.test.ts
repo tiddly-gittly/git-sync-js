@@ -58,7 +58,7 @@ describe('initGit', () => {
         defaultGitInfo,
       });
       // nested describe > beforeEach execute first, so after we add upstream, the .git folder is deleted and recreated, we need to manually fetch here
-      await GitProcess.exec(['fetch', 'origin', defaultGitInfo.branch], dir);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
       // basically same as other test suit
       const sharedCommitMessage = 'some commit message';
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
@@ -71,7 +71,7 @@ describe('initGit', () => {
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is equal until we fetch the latest remote
-      await GitProcess.exec(['fetch', 'origin'], dir);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     });
 
@@ -94,7 +94,7 @@ describe('initGit', () => {
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is equal until we fetch the latest remote
-      await GitProcess.exec(['fetch', 'origin'], dir);
+      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     });
   });
