@@ -8,19 +8,31 @@ import { IGitUserInfosWithoutToken, IGitUserInfos, ILogger, GitStep } from './in
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { commitFiles } from './sync';
 
-export async function initGit(options: {
+export type IInitGitOptions = IInitGitOptionsSyncImmediately | IInitGitOptionsNotSync;
+export interface IInitGitOptionsSyncImmediately {
   /** wiki folder path, can be relative */
   dir: string;
   /** should we sync after git init? */
-  syncImmediately?: boolean;
-  /** the storage service url we are sync to, for example your github repo url */
-  remoteUrl?: string;
+  syncImmediately: true;
+  /** only required if syncImmediately is true, the storage service url we are sync to, for example your github repo url */
+  remoteUrl: string;
   /** user info used in the commit message */
+  userInfo: IGitUserInfosWithoutToken & IGitUserInfos;
+  logger?: ILogger;
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
+}
+export interface IInitGitOptionsNotSync {
+  /** wiki folder path, can be relative */
+  dir: string;
+  /** should we sync after git init? */
+  syncImmediately?: false;
   userInfo?: IGitUserInfosWithoutToken | IGitUserInfos;
   logger?: ILogger;
   defaultGitInfo?: typeof defaultDefaultGitInfo;
-}): Promise<void> {
-  const { dir, remoteUrl, userInfo, syncImmediately, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
+}
+
+export async function initGit(options: IInitGitOptions): Promise<void> {
+  const { dir, userInfo, syncImmediately, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
 
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
@@ -45,6 +57,7 @@ export async function initGit(options: {
   if (userInfo === undefined || !('accessToken' in userInfo) || userInfo?.accessToken?.length === 0) {
     throw new SyncParameterMissingError('accessToken');
   }
+  const { remoteUrl } = options;
   if (remoteUrl === undefined || remoteUrl.length === 0) {
     throw new SyncParameterMissingError('remoteUrl');
   }
@@ -56,8 +69,10 @@ export async function initGit(options: {
   );
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, userInfo?.accessToken);
-  logProgress(GitStep.StartBackupToGitRemote);
+  logProgress(GitStep.FetchingData);
   const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
+  await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
+  logProgress(GitStep.StartBackupToGitRemote);
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir);
   await credentialOff(dir, remoteUrl);
   if (pushExitCode !== 0) {
