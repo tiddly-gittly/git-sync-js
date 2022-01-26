@@ -16,16 +16,16 @@ describe('commitAndSync', () => {
     await addAnUpstream();
   });
 
-  const commitAndSyncOptions: ICommitAndSyncOptions = {
+  const getCommitAndSyncOptions = (): ICommitAndSyncOptions => ({
     dir,
     remoteUrl: upstreamDir,
     userInfo: { ...defaultGitInfo, accessToken: exampleToken },
-  };
+  });
 
   test('equal to upstream that using dugite add', async () => {
     expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     await addSomeFiles();
-    await commitAndSync(commitAndSyncOptions);
+    await commitAndSync(getCommitAndSyncOptions());
     expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
   });
 });

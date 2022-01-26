@@ -24,7 +24,7 @@ export class SyncParameterMissingError extends Error {
     Object.setPrototypeOf(this, SyncParameterMissingError.prototype);
     this.name = 'SyncParameterMissingError';
     this.parameterName = parameterName;
-    this.message = `E-2 We need ${parameterName} to sync to the cloud, you should pass ${parameterName} as parameters in userInfo.`;
+    this.message = `E-2 We need ${parameterName} to sync to the cloud, you should pass ${parameterName} as parameters in options.`;
   }
 }
 
