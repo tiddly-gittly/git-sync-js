@@ -7,6 +7,7 @@ import { AssumeSyncError } from '../src/errors';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
+  exampleToken,
   gitDirectory,
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
@@ -58,6 +59,29 @@ describe('initGit', () => {
       });
       // nested describe > beforeEach execute first, so after we add upstream, the .git folder is deleted and recreated, we need to manually fetch here
       await GitProcess.exec(['fetch', 'origin', defaultGitInfo.branch], dir);
+      // basically same as other test suit
+      const sharedCommitMessage = 'some commit message';
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      await addSomeFiles();
+      await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
+
+      // modify upstream
+      await addSomeFiles(upstreamDir);
+      await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
+      // it is equal until we fetch the latest remote
+      await GitProcess.exec(['fetch', 'origin'], dir);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    });
+
+    test('syncImmediately to get equal state', async () => {
+      await initGit({
+        dir,
+        syncImmediately: true,
+        remoteUrl: upstreamDir,
+        userInfo: { ...defaultGitInfo, accessToken: exampleToken },
+      });
       // basically same as other test suit
       const sharedCommitMessage = 'some commit message';
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
