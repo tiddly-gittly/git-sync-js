@@ -28,6 +28,7 @@ export interface ILoggerContext {
   step: GitStep;
   dir?: string;
   remoteUrl?: string;
+  branch?: string;
 }
 
 export enum GitStep {
@@ -53,7 +54,9 @@ export enum GitStep {
   RebaseResultChecking = 'RebaseResultChecking',
   RebaseConflictNeedsResolve = 'RebaseConflictNeedsResolve',
   RebaseSucceed = 'RebaseSucceed',
+  GitPush = 'GitPush',
   GitPushFailed = 'GitPushFailed',
+  GitPushComplete = 'GitPushComplete',
   GitMergeFailed = 'GitMergeFailed',
   /** this means our algorithm have some problems */
   SyncFailedAlgorithmWrong = 'SyncFailedAlgorithmWrong',

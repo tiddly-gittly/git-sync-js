@@ -4,7 +4,7 @@ import { SyncParameterMissingError, GitPullPushError, CantSyncGitNotInitializedE
 import { assumeSync, getDefaultBranchName, getGitRepositoryState, getSyncState, haveLocalChanges } from './inspect';
 import { IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
-import { commitFiles, continueRebase } from './sync';
+import { commitFiles, continueRebase, pushUpstream } from './sync';
 
 export interface ICommitAndSyncOptions {
   /** wiki folder path, can be relative */
@@ -34,6 +34,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   if (remoteUrl === '' || remoteUrl === undefined) {
     throw new SyncParameterMissingError('remoteUrl');
   }
+  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
 
   const logProgress = (step: GitStep): unknown =>
     logger?.info?.(step, {
@@ -41,6 +42,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       step,
       dir,
       remoteUrl,
+      branch: defaultBranchName,
     });
   const logDebug = (message: string, step: GitStep): unknown =>
     logger?.debug?.(message, {
@@ -48,6 +50,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       step,
       dir,
       remoteUrl,
+      branch: defaultBranchName,
     });
   const logWarn = (message: string, step: GitStep): unknown =>
     logger?.warn?.(message, {
@@ -55,17 +58,14 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       step,
       dir,
       remoteUrl,
+      branch: defaultBranchName,
     });
-
-  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
-  /** when push to origin, we need to specify the local branch name and remote branch name */
-  const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
 
   // preflight check
   const repoStartingState = await getGitRepositoryState(dir, logger);
   if (repoStartingState.length === 0 || repoStartingState === '|DIRTY') {
     logProgress(GitStep.PrepareSync);
-    logDebug(`${dir} , ${gitUserName} <${email ?? defaultGitInfo.email}>`, GitStep.PrepareSync);
+    logDebug(`${dir} repoStartingState: ${repoStartingState}, ${gitUserName} <${email ?? defaultGitInfo.email}>`, GitStep.PrepareSync);
   } else if (repoStartingState === 'NOGIT') {
     throw new CantSyncGitNotInitializedError(dir);
   } else {
@@ -93,7 +93,8 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   await GitProcess.exec(['fetch', 'origin', defaultBranchName], dir);
   let exitCode = 0;
   let stderr: string | undefined;
-  switch (await getSyncState(dir, defaultBranchName, logger)) {
+  const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, logger);
+  switch (syncStateAfterCommit) {
     case 'equal': {
       logProgress(GitStep.NoNeedToSync);
       await credentialOff(dir, remoteUrl);
@@ -101,20 +102,11 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     case 'noUpstream': {
       logProgress(GitStep.NoUpstreamCantPush);
-      ({ exitCode, stderr } = await GitProcess.exec(['push', 'origin', defaultBranchName], dir));
-      if (exitCode === 0) {
-        break;
-      }
-      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.NoUpstreamCantPush);
-      throw new CantSyncGitNotInitializedError(dir);
+      throw new GitPullPushError({ dir, remoteUrl, userInfo }, `Step: ${GitStep.NoUpstreamCantPush}, remoteUrl is not valid, noUpstream after credentialOn`);
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);
-      ({ exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], dir));
-      if (exitCode === 0) {
-        break;
-      }
-      logWarn(`exitCode: ${exitCode}, stderr of git push: ${stderr}`, GitStep.LocalAheadStartUpload);
+      await pushUpstream(dir, defaultBranchName, logger);
       break;
     }
     case 'behind': {
@@ -139,7 +131,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
         await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
-      await GitProcess.exec(['push', 'origin', branchMapping], dir);
+      await pushUpstream(dir, defaultBranchName, logger);
       break;
     }
     default: {

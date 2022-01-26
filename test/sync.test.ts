@@ -12,7 +12,7 @@ import {
   upstreamDir,
 } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
-import { commitFiles } from '../src/sync';
+import { commitFiles, pushUpstream } from '../src/sync';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -45,5 +45,23 @@ describe('commitFiles', () => {
     await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, undefined, [ignoredFileName]);
     const fileList = await getModifiedFileList(dir);
     expect(fileList).toStrictEqual([{ filePath: ignoredFilePath, fileRelativePath: ignoredFileName, type: '??' }]);
+  });
+});
+
+describe('pushUpstream', () => {
+  describe('with upstream', () => {
+    beforeEach(async () => {
+      await addAnUpstream();
+    });
+
+    test('equal to upstream after push', async () => {
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+      await addSomeFiles();
+      await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
+
+      await pushUpstream(dir, defaultGitInfo.branch);
+      expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
+    });
   });
 });

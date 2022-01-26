@@ -37,6 +37,7 @@ export class GitPullPushError extends Error {
       remoteUrl?: string;
       /** user info used in the commit message */
       userInfo?: IGitUserInfos | IGitUserInfosWithoutToken;
+      branch?: string;
     },
     extraMessages: string,
   ) {

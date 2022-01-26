@@ -3,7 +3,7 @@ import { GitProcess, IGitResult } from 'dugite';
 import { add, listFiles, remove } from 'isomorphic-git';
 import fs from 'fs-extra';
 
-import { CantSyncInSpecialGitStateAutoFixFailed, SyncScriptIsInDeadLoopError } from './errors';
+import { CantSyncInSpecialGitStateAutoFixFailed, GitPullPushError, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
 import { GitStep, ILogger } from './interface';
 
@@ -42,6 +42,32 @@ export async function commitFiles(
 
   logProgress(GitStep.AddComplete);
   return await GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir);
+}
+
+/**
+ * Git push origin master
+ * @param dir
+ * @param username
+ * @param email
+ * @param message
+ */
+export async function pushUpstream(dir: string, branch: string, logger?: ILogger): Promise<IGitResult> {
+  const logProgress = (step: GitStep): unknown =>
+    logger?.info(step, {
+      functionName: 'commitFiles',
+      step,
+      dir,
+    });
+  /** when push to origin, we need to specify the local branch name and remote branch name */
+  const branchMapping = `${branch}:${branch}`;
+  logProgress(GitStep.GitPush);
+  const result = await GitProcess.exec(['push', 'origin', branchMapping], dir);
+
+  logProgress(GitStep.GitPushComplete);
+  if (result.exitCode !== 0) {
+    throw new GitPullPushError({ dir, branch }, result.stderr);
+  }
+  return result;
 }
 
 /**
