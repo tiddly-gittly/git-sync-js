@@ -3,14 +3,15 @@
  * `Object.setPrototypeOf(this, AssumeSyncError.prototype);` to fix https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
  */
 import { truncate } from 'lodash';
+import { SyncState } from './inspect';
 import { IGitUserInfos, IGitUserInfosWithoutToken } from './interface';
 
 export class AssumeSyncError extends Error {
-  constructor(extraMessage?: string) {
+  constructor(state: SyncState, extraMessage?: string) {
     super(extraMessage);
     Object.setPrototypeOf(this, AssumeSyncError.prototype);
     this.name = 'AssumeSyncError';
-    this.message = `E-1 In this state, git should have been sync with the remote, but it is not, this is caused by procedural bug in the git-sync-js. ${
+    this.message = `E-1 In this state, git should have been sync with the remote, but it is "${state}", this is caused by procedural bug in the git-sync-js. ${
       extraMessage ?? ''
     }`;
   }
@@ -45,7 +46,7 @@ export class GitPullPushError extends Error {
     this.message = `E-3 failed to config git to successfully pull from or push to remote with configuration ${JSON.stringify({
       ...configuration,
       userInfo: {
-        ...(configuration.userInfo ?? {}),
+        ...configuration.userInfo,
         accessToken: truncate((configuration?.userInfo as IGitUserInfos)?.accessToken, {
           length: 24,
         }),

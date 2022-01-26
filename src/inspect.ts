@@ -149,10 +149,11 @@ export async function getSyncState(dir: string, defaultBranchName: string, logge
 }
 
 export async function assumeSync(wikiFolderPath: string, defaultBranchName: string, logger?: ILogger): Promise<void> {
-  if ((await getSyncState(wikiFolderPath, defaultBranchName, logger)) === 'equal') {
+  const syncState = await getSyncState(wikiFolderPath, defaultBranchName, logger);
+  if (syncState === 'equal') {
     return;
   }
-  throw new AssumeSyncError();
+  throw new AssumeSyncError(syncState);
 }
 
 /**

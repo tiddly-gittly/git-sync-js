@@ -204,7 +204,7 @@ describe('getSyncState and getGitRepositoryState', () => {
       await addSomeFiles();
       await addAndCommitUsingDugite();
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('ahead'));
     });
 
     test('behind after modify the remote', async () => {
@@ -214,7 +214,7 @@ describe('getSyncState and getGitRepositoryState', () => {
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', 'origin'], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('behind');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('behind'));
     });
 
     test('diverged after modify both remote and local', async () => {
@@ -235,7 +235,7 @@ describe('getSyncState and getGitRepositoryState', () => {
       // it is equal until we fetch the latest remote
       await GitProcess.exec(['fetch', 'origin'], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('diverged');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError());
+      await expect(async () => await assumeSync(dir, defaultGitInfo.branch)).rejects.toThrowError(new AssumeSyncError('diverged'));
     });
   });
 });
