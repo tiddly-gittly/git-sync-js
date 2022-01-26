@@ -55,8 +55,10 @@ export enum GitStep {
   RebaseConflictNeedsResolve = 'RebaseConflictNeedsResolve',
   RebaseSucceed = 'RebaseSucceed',
   GitPush = 'GitPush',
+  GitMerge = 'GitMerge',
   GitPushFailed = 'GitPushFailed',
   GitPushComplete = 'GitPushComplete',
+  GitMergeComplete = 'GitMergeComplete',
   GitMergeFailed = 'GitMergeFailed',
   /** this means our algorithm have some problems */
   SyncFailedAlgorithmWrong = 'SyncFailedAlgorithmWrong',

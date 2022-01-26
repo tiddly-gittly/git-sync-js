@@ -4,7 +4,7 @@ import { SyncParameterMissingError, GitPullPushError, CantSyncGitNotInitializedE
 import { assumeSync, getDefaultBranchName, getGitRepositoryState, getRemoteName, getSyncState, haveLocalChanges } from './inspect';
 import { IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
-import { commitFiles, continueRebase, pushUpstream } from './sync';
+import { commitFiles, continueRebase, mergeUpstream, pushUpstream } from './sync';
 
 export interface ICommitAndSyncOptions {
   /** wiki folder path, can be relative */
@@ -112,11 +112,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     case 'behind': {
       logProgress(GitStep.LocalStateBehindSync);
-      ({ exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `${remoteName}/${defaultBranchName}`], dir));
-      if (exitCode === 0) {
-        break;
-      }
-      logWarn(`exitCode: ${exitCode}, stderr of git merge: ${stderr}`, GitStep.LocalStateBehindSync);
+      await mergeUpstream(dir, defaultBranchName, remoteName, logger);
       break;
     }
     case 'diverged': {

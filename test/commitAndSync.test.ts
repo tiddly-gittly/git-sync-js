@@ -22,7 +22,7 @@ describe('commitAndSync', () => {
     userInfo: { ...defaultGitInfo, accessToken: exampleToken },
   });
 
-  test('equal to upstream that using dugite add', async () => {
+  test('equal to upstream that been commitAndSync to', async () => {
     expect(await getSyncState(dir, defaultGitInfo.branch)).toBe<SyncState>('equal');
     await addSomeFiles();
     await commitAndSync(getCommitAndSyncOptions());

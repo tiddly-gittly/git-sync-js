@@ -45,7 +45,8 @@ export async function commitFiles(
 }
 
 /**
- * Git push origin master
+ * Git push -f origin master
+ * This does force push, to deal with `--allow-unrelated-histories` case
  * @param dir
  * @param username
  * @param email
@@ -54,20 +55,43 @@ export async function commitFiles(
 export async function pushUpstream(dir: string, branch: string, remoteName: string, logger?: ILogger): Promise<IGitResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
-      functionName: 'commitFiles',
+      functionName: 'pushUpstream',
       step,
       dir,
     });
   /** when push to remote, we need to specify the local branch name and remote branch name */
   const branchMapping = `${branch}:${branch}`;
   logProgress(GitStep.GitPush);
-  const result = await GitProcess.exec(['push', remoteName, branchMapping], dir);
-
+  const pushResult = await GitProcess.exec(['push', '-f', remoteName, branchMapping], dir);
   logProgress(GitStep.GitPushComplete);
-  if (result.exitCode !== 0) {
-    throw new GitPullPushError({ dir, branch }, result.stderr);
+  if (pushResult.exitCode !== 0) {
+    throw new GitPullPushError({ dir, branch, remote: remoteName }, pushResult.stdout + pushResult.stderr);
   }
-  return result;
+  return pushResult;
+}
+
+/**
+ * Git merge origin master
+ * @param dir
+ * @param username
+ * @param email
+ * @param message
+ */
+export async function mergeUpstream(dir: string, branch: string, remoteName: string, logger?: ILogger): Promise<IGitResult> {
+  const logProgress = (step: GitStep): unknown =>
+    logger?.info(step, {
+      functionName: 'mergeUpstream',
+      step,
+      dir,
+    });
+  logProgress(GitStep.GitMerge);
+  const mergeResult = await GitProcess.exec(['merge', '--ff', '--ff-only', `${remoteName}/${branch}`], dir);
+  logProgress(GitStep.GitMergeComplete);
+  if (mergeResult.exitCode !== 0) {
+    throw new GitPullPushError({ dir, branch, remote: remoteName }, mergeResult.stdout + mergeResult.stderr);
+  }
+
+  return mergeResult;
 }
 
 /**

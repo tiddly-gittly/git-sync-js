@@ -35,6 +35,8 @@ export class GitPullPushError extends Error {
       dir: string;
       /** the storage service url we are sync to, for example your github repo url */
       remoteUrl?: string;
+      /** for example, origin */
+      remote?: string;
       /** user info used in the commit message */
       userInfo?: IGitUserInfos | IGitUserInfosWithoutToken;
       branch?: string;
@@ -52,7 +54,7 @@ export class GitPullPushError extends Error {
           length: 24,
         }),
       },
-    })}.\n${extraMessages}`;
+    })}.\nerrorMessages: ${extraMessages}`;
   }
 }
 
