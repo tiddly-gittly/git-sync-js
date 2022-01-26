@@ -10,9 +10,11 @@ import {
   dir,
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
+  upstreamDirGitDirectory,
 } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
 import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
+import { initGitWithBranch } from '../src/init';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -51,6 +53,8 @@ describe('commitFiles', () => {
 describe('pushUpstream', () => {
   describe('with upstream', () => {
     beforeEach(async () => {
+      await fs.remove(upstreamDirGitDirectory);
+      await initGitWithBranch(upstreamDir, defaultGitInfo.branch, true);
       await addAnUpstream();
     });
 

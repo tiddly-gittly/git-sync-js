@@ -15,6 +15,7 @@ export let dir: string;
 export let upstreamDir: string;
 
 export let gitDirectory: string;
+export let upstreamDirGitDirectory: string;
 export let gitSyncRepoDirectory: string;
 export let gitSyncRepoDirectoryGitDirectory: string;
 
@@ -35,6 +36,7 @@ export const setGlobalConstants = (): void => {
   upstreamDir = path.join(__dirname, 'mockUpstreamRepo', repoName);
 
   gitDirectory = path.join(dir, '.git');
+  upstreamDirGitDirectory = path.join(upstreamDir, '.git');
   gitSyncRepoDirectory = path.join(__dirname, '..');
   gitSyncRepoDirectoryGitDirectory = path.join(gitSyncRepoDirectory, '.git');
 };

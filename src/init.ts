@@ -1,4 +1,5 @@
-import { compact } from 'lodash';
+import fs from 'fs-extra';
+import path from 'path';
 /* eslint-disable unicorn/prevent-abbreviations */
 import { GitProcess } from 'dugite';
 import { defaultGitInfo } from './defaultGitInfo';
@@ -7,7 +8,13 @@ import { defaultGitInfo } from './defaultGitInfo';
  * Init and immediately checkout the branch, other wise the branch will be HEAD, which is annoying in the later steps
  */
 export async function initGitWithBranch(dir: string, branch = defaultGitInfo.branch, bare = false): Promise<void> {
-  await GitProcess.exec(compact(['init', `--initial-branch=${branch}`, bare ? '--bare' : undefined]), dir);
+  if (bare) {
+    const bareGitPath = path.join(dir, '.git');
+    await fs.mkdirp(bareGitPath);
+    await GitProcess.exec(['init', `--initial-branch=${branch}`, '--bare'], bareGitPath);
+  } else {
+    await GitProcess.exec(['init', `--initial-branch=${branch}`], dir);
+  }
   /**
    * try fix https://stackoverflow.com/questions/12267912/git-error-fatal-ambiguous-argument-head-unknown-revision-or-path-not-in-the
    *
