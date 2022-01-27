@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import { GitProcess } from 'dugite';
+import os from 'os';
 import {
   assumeSync,
   getDefaultBranchName,
@@ -57,6 +58,16 @@ describe('getGitDirectory', () => {
 });
 
 describe('getDefaultBranchName', () => {
+  test('return undefined on a non git folder', async () => {
+    const branch = await getDefaultBranchName(os.tmpdir());
+    expect(branch).toBe(undefined);
+  });
+
+  test('return undefined on a not existed folder', async () => {
+    const branch = await getDefaultBranchName(os.tmpdir() + '/not-existed');
+    expect(branch).toBe(undefined);
+  });
+
   test('it is main now due to BLM activities', async () => {
     const branch = await getDefaultBranchName(dir);
     expect(branch).toBe('main');

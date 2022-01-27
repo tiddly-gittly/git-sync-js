@@ -108,9 +108,21 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
  * @param wikiFolderPath
  */
 export async function getDefaultBranchName(wikiFolderPath: string): Promise<string | undefined> {
-  const { stdout } = await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], wikiFolderPath);
-  const [branchName] = stdout.split('\n');
-  return branchName;
+  try {
+    const { stdout } = await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], wikiFolderPath);
+    const [branchName] = stdout.split('\n');
+    // don't return empty string, so we can use ?? syntax
+    if (branchName === '') {
+      return;
+    }
+    return branchName;
+  } catch {
+    /**
+     * Catch "Unable to find path to repository on disk."
+      at node_modules/dugite/lib/git-process.ts:226:29
+     */
+    return undefined;
+  }
 }
 
 export type SyncState = 'noUpstreamOrBareUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged';
