@@ -11,6 +11,7 @@ import {
   upstreamDir,
 } from './constants';
 import { clone } from '../src/clone';
+import { addAndCommitUsingDugite, addSomeFiles } from './utils';
 
 describe('clone', () => {
   beforeEach(async () => {
@@ -31,13 +32,17 @@ describe('clone', () => {
       expect(await getDefaultBranchName(dir)).toBe(defaultGitInfo.branch);
     });
 
-    // test('equal to upstream that have commits', async () => {
-    //   await clone({
-    //     dir,
-    //     defaultGitInfo,
-    //     remoteUrl: upstreamDir,
-    //   });
-    //   expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
-    // });
+    test('equal to committed upstream', async () => {
+      // modify upstream
+      await addSomeFiles(upstreamDir);
+      await addAndCommitUsingDugite(upstreamDir);
+
+      await clone({
+        dir,
+        userInfo: { ...defaultGitInfo, accessToken: exampleToken },
+        remoteUrl: upstreamDir,
+      });
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+    });
   });
 });
