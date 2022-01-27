@@ -1,9 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
-import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
-import { assumeSync, getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
+import { getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
 import { defaultGitInfo } from '../src/defaultGitInfo';
-import { AssumeSyncError } from '../src/errors';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -12,8 +10,6 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
-import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
-import { commitFiles } from '../src/sync';
 import { clone } from '../src/clone';
 
 describe('clone', () => {
@@ -22,15 +18,26 @@ describe('clone', () => {
     await fs.remove(gitDirectory);
   });
 
-  const testBranchName = 'test-branch';
-
   describe('with upstream', () => {
-    test('equal to upstream that using dugite add', async () => {
+    test('equal to upstream after clone', async () => {
       await clone({
         dir,
-        defaultGitInfo,
+        userInfo: { ...defaultGitInfo, accessToken: exampleToken },
         remoteUrl: upstreamDir,
       });
+      expect(await hasGit(dir)).toBe(true);
+      expect(await haveLocalChanges(dir)).toBe(false);
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+      expect(await getDefaultBranchName(dir)).toBe(defaultGitInfo.branch);
     });
+
+    // test('equal to upstream that have commits', async () => {
+    //   await clone({
+    //     dir,
+    //     defaultGitInfo,
+    //     remoteUrl: upstreamDir,
+    //   });
+    //   expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+    // });
   });
 });

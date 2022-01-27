@@ -2,7 +2,7 @@ import { GitProcess } from 'dugite';
 import { truncate } from 'lodash';
 import { credentialOn, credentialOff } from './credential';
 import { SyncParameterMissingError, GitPullPushError } from './errors';
-import { getDefaultBranchName, getRemoteName } from './inspect';
+import { getRemoteName } from './inspect';
 import { IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { initGitWithBranch } from './init';
@@ -55,16 +55,15 @@ export async function clone(options: {
     }),
     GitStep.PrepareCloneOnlineWiki,
   );
-  const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
-  const remoteName = await getRemoteName(dir, defaultBranchName);
   logDebug(`Running git init for clone in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
-  await initGitWithBranch(dir, defaultBranchName, { initialCommit: false });
+  await initGitWithBranch(dir, branch, { initialCommit: false });
+  const remoteName = await getRemoteName(dir, branch);
   logDebug(`Successfully Running git init for clone in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.StartFetchingFromGithubRemote);
-  const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', remoteName, `${defaultBranchName}:${defaultBranchName}`], dir);
-  await credentialOff(dir, remoteUrl);
+  const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', remoteName, `${branch}:${branch}`], dir);
+  await credentialOff(dir, remoteName, remoteUrl);
   if (exitCode !== 0) {
     throw new GitPullPushError(options, pullStdError);
   } else {
