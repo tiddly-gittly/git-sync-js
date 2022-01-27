@@ -40,6 +40,6 @@ export async function addAndCommitUsingDugite(
 
 export async function addBareUpstream(): Promise<void> {
   await fs.remove(upstreamDirGitDirectory);
-  await initGitWithBranch(upstreamDir, defaultGitInfo.branch, true);
+  await initGitWithBranch(upstreamDir, defaultGitInfo.branch, { bare: true });
   await addAnUpstream();
 }

@@ -5,9 +5,10 @@ import { SyncParameterMissingError, GitPullPushError } from './errors';
 import { getDefaultBranchName, getRemoteName } from './inspect';
 import { IGitUserInfos, ILogger, GitStep } from './interface';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
+import { initGitWithBranch } from './init';
 
 export async function clone(options: {
-  /** wiki folder path, can be relative */
+  /** wiki folder path, can be relative, should exist before function call */
   dir: string;
   /** the storage service url we are sync to, for example your github repo url */
   remoteUrl?: string;
@@ -29,14 +30,14 @@ export async function clone(options: {
 
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
-      functionName: 'commitAndSync',
+      functionName: 'clone',
       step,
       dir,
       remoteUrl,
     });
   const logDebug = (message: string, step: GitStep): unknown =>
     logger?.debug(message, {
-      functionName: 'commitAndSync',
+      functionName: 'clone',
       step,
       dir,
       remoteUrl,
@@ -56,9 +57,9 @@ export async function clone(options: {
   );
   const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
   const remoteName = await getRemoteName(dir, defaultBranchName);
-  logDebug(`Running git init in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
-  await GitProcess.exec(['init'], dir);
-  logDebug(`Succefully Running git init in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
+  logDebug(`Running git init for clone in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
+  await initGitWithBranch(dir, defaultBranchName, { initialCommit: false });
+  logDebug(`Successfully Running git init for clone in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.StartFetchingFromGithubRemote);
