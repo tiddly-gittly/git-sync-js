@@ -8,12 +8,12 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
-import { addAnUpstream, addSomeFiles } from './utils';
+import { addBareUpstream, addSomeFiles } from './utils';
 import { commitAndSync, ICommitAndSyncOptions } from '../src/commitAndSync';
 
 describe('commitAndSync', () => {
   beforeEach(async () => {
-    await addAnUpstream();
+    await addBareUpstream();
   });
 
   const getCommitAndSyncOptions = (): ICommitAndSyncOptions => ({
@@ -23,7 +23,7 @@ describe('commitAndSync', () => {
   });
 
   test('equal to upstream that been commitAndSync to', async () => {
-    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
     await addSomeFiles();
     await commitAndSync(getCommitAndSyncOptions());
     expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');

@@ -103,10 +103,17 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     case 'noUpstreamOrBareUpstream': {
       logProgress(GitStep.NoUpstreamCantPush);
-      throw new GitPullPushError(
-        { dir, remoteUrl, userInfo },
-        `Step: ${GitStep.NoUpstreamCantPush}, remoteUrl is not valid, noUpstreamOrBareUpstream after credentialOn`,
-      );
+      // try push, if success, means it is bare, otherwise, it is no upstream
+      try {
+        await pushUpstream(dir, defaultBranchName, remoteName, logger);
+        break;
+      } catch (error) {
+        logWarn(
+          `${JSON.stringify({ dir, remoteUrl, userInfo })}, remoteUrl may be not valid, noUpstreamOrBareUpstream after credentialOn`,
+          GitStep.NoUpstreamCantPush,
+        );
+        throw error;
+      }
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);

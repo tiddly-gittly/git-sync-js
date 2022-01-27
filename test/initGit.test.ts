@@ -47,10 +47,6 @@ describe('initGit', () => {
   });
 
   describe('with upstream', () => {
-    beforeEach(async () => {
-      await addAnUpstream();
-    });
-
     test('equal to upstream that using dugite add', async () => {
       await initGit({
         dir,
@@ -61,7 +57,12 @@ describe('initGit', () => {
       await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
       // basically same as other test suit
       const sharedCommitMessage = 'some commit message';
+
+      // syncImmediately: false, so we don't have a remote yet
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
+      await addAnUpstream();
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
