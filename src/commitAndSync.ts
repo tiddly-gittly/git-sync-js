@@ -9,10 +9,15 @@ import { commitFiles, continueRebase, mergeUpstream, pushUpstream } from './sync
 export interface ICommitAndSyncOptions {
   /** wiki folder path, can be relative */
   dir: string;
-  /** the storage service url we are sync to, for example your github repo url */
-  remoteUrl: string;
-  /** user info used in the commit message */
-  userInfo: IGitUserInfos;
+  commitOnly?: boolean;
+  /** the storage service url we are sync to, for example your github repo url
+   * When empty, and commitOnly===true, it means we just want commit, without sync
+   */
+  remoteUrl?: string;
+  /** user info used in the commit message
+   * When empty, and commitOnly===true, it means we just want commit, without sync
+   */
+  userInfo?: IGitUserInfos;
   /** the commit message */
   commitMessage?: string;
   logger?: ILogger;
@@ -24,16 +29,19 @@ export interface ICommitAndSyncOptions {
  * `git add .` + `git commit` + `git rebase` or something that can sync bi-directional
  */
 export async function commitAndSync(options: ICommitAndSyncOptions): Promise<void> {
-  const { dir, remoteUrl, commitMessage = 'Updated with Git-Sync', userInfo, logger, defaultGitInfo = defaultDefaultGitInfo, filesToIgnore } = options;
+  const {
+    dir,
+    remoteUrl,
+    commitMessage = 'Updated with Git-Sync',
+    userInfo,
+    logger,
+    defaultGitInfo = defaultDefaultGitInfo,
+    filesToIgnore,
+    commitOnly,
+  } = options;
   const { gitUserName, email, branch } = userInfo ?? defaultGitInfo;
   const { accessToken } = userInfo ?? {};
 
-  if (accessToken === '' || accessToken === undefined) {
-    throw new SyncParameterMissingError('accessToken');
-  }
-  if (remoteUrl === '' || remoteUrl === undefined) {
-    throw new SyncParameterMissingError('remoteUrl');
-  }
   const defaultBranchName = (await getDefaultBranchName(dir)) ?? branch;
   const remoteName = await getRemoteName(dir, defaultBranchName);
 
@@ -88,7 +96,16 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     logProgress(GitStep.CommitComplete);
   }
+  if (commitOnly === true) {
+    return;
+  }
   logProgress(GitStep.PreparingUserInfo);
+  if (accessToken === '' || accessToken === undefined) {
+    throw new SyncParameterMissingError('accessToken');
+  }
+  if (remoteUrl === '' || remoteUrl === undefined) {
+    throw new SyncParameterMissingError('remoteUrl');
+  }
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.FetchingData);
   await GitProcess.exec(['fetch', remoteName, defaultBranchName], dir);
