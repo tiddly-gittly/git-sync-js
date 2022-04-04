@@ -32,6 +32,7 @@ module.exports = {
     'no-void': [0],
     'unicorn/prefer-ternary': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
+    'unicorn/no-await-expression-member': 'off',
     semi: [0],
     'no-use-before-define': [0],
     '@typescript-eslint/no-use-before-define': [1],
