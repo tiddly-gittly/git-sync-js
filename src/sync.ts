@@ -1,6 +1,6 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { GitProcess, IGitResult } from 'dugite';
-import { add, listFiles, remove } from 'isomorphic-git';
+import { listFiles, remove } from 'isomorphic-git';
 import fs from 'fs-extra';
 
 import { CantSyncInSpecialGitStateAutoFixFailed, GitPullPushError, SyncScriptIsInDeadLoopError } from './errors';
@@ -30,7 +30,7 @@ export async function commitFiles(
     });
 
   logProgress(GitStep.AddingFiles);
-  await add({ dir, filepath: '.', fs });
+  await GitProcess.exec(['add', '.'], dir);
   // find and unStage files that are in the ignore list
   const stagedFiles = await listFiles({ fs, dir });
   if (filesToIgnore.length > 0) {
