@@ -122,7 +122,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       logProgress(GitStep.NoUpstreamCantPush);
       // try push, if success, means it is bare, otherwise, it is no upstream
       try {
-        await pushUpstream(dir, defaultBranchName, remoteName, logger);
+        await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
         break;
       } catch (error) {
         logWarn(
@@ -134,12 +134,12 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
     case 'ahead': {
       logProgress(GitStep.LocalAheadStartUpload);
-      await pushUpstream(dir, defaultBranchName, remoteName, logger);
+      await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
       break;
     }
     case 'behind': {
       logProgress(GitStep.LocalStateBehindSync);
-      await mergeUpstream(dir, defaultBranchName, remoteName, logger);
+      await mergeUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
       break;
     }
     case 'diverged': {
@@ -159,7 +159,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
         await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
         logProgress(GitStep.RebaseConflictNeedsResolve);
       }
-      await pushUpstream(dir, defaultBranchName, remoteName, logger);
+      await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
       break;
     }
     default: {

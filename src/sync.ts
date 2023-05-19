@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 import { CantSyncInSpecialGitStateAutoFixFailed, GitPullPushError, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
-import { GitStep, ILogger } from './interface';
+import { GitStep, IGitUserInfos, IGitUserInfosWithoutToken, ILogger } from './interface';
 
 /**
  * Git add and commit all file
@@ -52,7 +52,13 @@ export async function commitFiles(
  * @param email
  * @param message
  */
-export async function pushUpstream(dir: string, branch: string, remoteName: string, logger?: ILogger): Promise<IGitResult> {
+export async function pushUpstream(
+  dir: string,
+  branch: string,
+  remoteName: string,
+  userInfo?: IGitUserInfos | IGitUserInfosWithoutToken | undefined,
+  logger?: ILogger,
+): Promise<IGitResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'pushUpstream',
@@ -65,7 +71,7 @@ export async function pushUpstream(dir: string, branch: string, remoteName: stri
   const pushResult = await GitProcess.exec(['push', remoteName, branchMapping], dir);
   logProgress(GitStep.GitPushComplete);
   if (pushResult.exitCode !== 0) {
-    throw new GitPullPushError({ dir, branch, remote: remoteName }, pushResult.stdout + pushResult.stderr);
+    throw new GitPullPushError({ dir, branch, remote: remoteName, userInfo }, pushResult.stdout + pushResult.stderr);
   }
   return pushResult;
 }
@@ -77,7 +83,13 @@ export async function pushUpstream(dir: string, branch: string, remoteName: stri
  * @param email
  * @param message
  */
-export async function mergeUpstream(dir: string, branch: string, remoteName: string, logger?: ILogger): Promise<IGitResult> {
+export async function mergeUpstream(
+  dir: string,
+  branch: string,
+  remoteName: string,
+  userInfo?: IGitUserInfos | IGitUserInfosWithoutToken | undefined,
+  logger?: ILogger,
+): Promise<IGitResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'mergeUpstream',
@@ -88,7 +100,7 @@ export async function mergeUpstream(dir: string, branch: string, remoteName: str
   const mergeResult = await GitProcess.exec(['merge', '--ff', '--ff-only', `${remoteName}/${branch}`], dir);
   logProgress(GitStep.GitMergeComplete);
   if (mergeResult.exitCode !== 0) {
-    throw new GitPullPushError({ dir, branch, remote: remoteName }, mergeResult.stdout + mergeResult.stderr);
+    throw new GitPullPushError({ dir, branch, remote: remoteName, userInfo }, mergeResult.stdout + mergeResult.stderr);
   }
 
   return mergeResult;

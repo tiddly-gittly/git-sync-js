@@ -8,6 +8,7 @@ import { AssumeSyncError } from '../src/errors';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
+  exampleToken,
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
@@ -59,7 +60,7 @@ describe('pushUpstream', () => {
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
 
-      await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
   });
@@ -77,7 +78,7 @@ describe('mergeUpstream', () => {
       await commitFiles(upstreamDir, defaultGitInfo.gitUserName, defaultGitInfo.email);
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
-      await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
     });
   });
