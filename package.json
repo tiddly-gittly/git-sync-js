@@ -1,6 +1,6 @@
 {
   "name": "git-sync-js",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "JS implementation for Git-Sync, a handy script that backup your notes in a git repo to the remote git services.",
   "homepage": "https://github.com/linonetwo/git-sync-js",
   "bugs": {
