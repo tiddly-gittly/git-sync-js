@@ -27,7 +27,7 @@ export const setGlobalConstants = (): void => {
    * Random dir name to prevent parallel test execution collision
    * This is undefined in describe! Only work inside test block.
    */
-  repoName = expect.getState().currentTestName;
+  repoName = expect.getState().currentTestName!;
   /**
    * mockRepoLocation
    */
