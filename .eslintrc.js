@@ -1,11 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const tsEslintConfig = require('./tsconfig.eslint.json');
-
 module.exports = {
-  ignorePatterns: tsEslintConfig.exclude,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: './tsconfig.eslint.json',
+    project: './tsconfig.json',
     tsconfigRootDir: __dirname,
     sourceType: 'module',
     ecmaFeatures: {
@@ -22,13 +18,6 @@ module.exports = {
       },
       typescript: {
         alwaysTryTypes: true,
-      },
-      alias: {
-        map: [
-          ['@', './src'],
-          ['@services', './src/services'],
-        ],
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
       },
     },
   },
@@ -55,6 +44,7 @@ module.exports = {
       },
     ],
     'react/react-in-jsx-scope': 'off',
+    'unicorn/prevent-abbreviations': 'off',
     'security-node/detect-unhandled-async-errors': 'off',
     'unicorn/prefer-node-protocol': 'off',
     'unicorn/prefer-module': 'off',
@@ -98,7 +88,10 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     semi: [0],
     'unused-imports/no-unused-imports': 'error',
-    'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
+    'unused-imports/no-unused-vars': [
+      'warn',
+      { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' },
+    ],
     'dprint-integration/dprint': [
       'warn',
       // Global Config (will pass to the dprint formatter directly): Available at https://dprint.dev/config/
@@ -112,7 +105,7 @@ module.exports = {
     ],
     // conflict with dprint-integration/dprint, will make some line disappear, and some line duplicated
     '@typescript-eslint/consistent-type-imports': 'off',
-    'comma-dangle': 'off'
+    'comma-dangle': 'off',
   },
   extends: [
     'eslint:recommended',

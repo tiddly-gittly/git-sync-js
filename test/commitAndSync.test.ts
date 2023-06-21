@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
-import { getSyncState, SyncState } from '../src/inspect';
+import { commitAndSync, ICommitAndSyncOptions } from '../src/commitAndSync';
 import { defaultGitInfo } from '../src/defaultGitInfo';
+import { getSyncState, SyncState } from '../src/inspect';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -9,7 +10,6 @@ import {
   upstreamDir,
 } from './constants';
 import { addBareUpstream, addSomeFiles } from './utils';
-import { commitAndSync, ICommitAndSyncOptions } from '../src/commitAndSync';
 
 describe('commitAndSync', () => {
   beforeEach(async () => {

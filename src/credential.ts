@@ -2,6 +2,7 @@ import { trim } from 'lodash';
 import { GitProcess } from 'dugite';
 import { getRemoteUrl } from './inspect';
 
+// TODO: support folderLocation as rawUrl like `/Users/linonetwo/Desktop/repo/git-sync-js/test/mockUpstreamRepo/credential` for test, or gitlab url.
 export const getGitUrlWithCredential = (rawUrl: string, username: string, accessToken: string): string =>
   trim(rawUrl.replace(/\n/g, '').replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
 const getGitUrlWithOutCredential = (urlWithCredential: string): string => trim(urlWithCredential.replace(/.+@/, 'https://'));
