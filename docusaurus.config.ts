@@ -57,15 +57,9 @@ export default {
           alt: 'Logo',
           // temporary logo, change this when we have a real one
           // it will try to load `static/images/Logo.png` if provided `"/images/Logo.png"`.
-          src: '/images/Logo.png',
+          src: '/images/Logo.webp',
         },
         items: [
-          {
-            type: 'doc',
-            docId: 'README',
-            position: 'left',
-            label: 'README',
-          },
           { to: 'api', label: 'API', position: 'left' },
           {
             href: `https://github.com/${organizationName}/${projectName}`,
@@ -77,15 +71,6 @@ export default {
       footer: {
         style: 'dark',
         links: [
-          {
-            title: 'Docs',
-            items: [
-              {
-                label: 'README',
-                to: 'README',
-              },
-            ],
-          },
           {
             title: 'Community',
             items: [
