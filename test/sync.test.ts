@@ -11,7 +11,7 @@ import {
   dir,
   exampleToken,
 } from './constants';
-import { addAnUpstream, addBareUpstream, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
+import { addAnUpstream, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -43,43 +43,38 @@ describe('commitFiles', () => {
 });
 
 describe('pushUpstream', () => {
-  describe('with upstream', () => {
-    beforeEach(async () => {
-      await addBareUpstream();
-    });
+  beforeEach(async () => {
+    await addAnUpstream();
+  });
+  test('equal to upstream after push', async () => {
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
+    await addSomeFiles();
+    await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
 
-    test('equal to upstream after push', async () => {
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
-      await addSomeFiles();
-      await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email);
-
-      await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
-    });
+    await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
   });
 });
 
 describe('mergeUpstream', () => {
-  describe('with upstream', () => {
-    beforeEach(async () => {
-      await Promise.all([
-        addAnUpstream(),
-        createAndSyncRepo2ToRemote(),
-      ]);
-    });
+  beforeEach(async () => {
+    await Promise.all([
+      addAnUpstream(),
+      createAndSyncRepo2ToRemote(),
+    ]);
+  });
 
-    test('equal to upstream after pull', async () => {
-      // local repo with init commit is diverged with upstream with init commit
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
-      await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+  test('equal to upstream after pull', async () => {
+    // local repo with init commit is diverged with upstream with init commit
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
+    await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
 
-      await anotherRepo2PushSomeFiles();
+    await anotherRepo2PushSomeFiles();
 
-      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
-      await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
-    });
+    await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
+    await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
+    expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
   });
 });

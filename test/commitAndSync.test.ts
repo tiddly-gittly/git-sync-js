@@ -9,13 +9,9 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
-import { addBareUpstream, addSomeFiles } from './utils';
+import { addSomeFiles } from './utils';
 
 describe('commitAndSync', () => {
-  beforeEach(async () => {
-    await addBareUpstream();
-  });
-
   const getCommitAndSyncOptions = (): ICommitAndSyncOptions => ({
     dir,
     remoteUrl: upstreamDir,

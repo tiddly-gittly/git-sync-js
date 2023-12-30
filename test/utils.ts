@@ -4,7 +4,7 @@ import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
-import { dir, dir2, exampleImageBuffer, exampleToken, upstreamDir, upstreamDirGitDirectory } from './constants';
+import { dir, dir2, exampleImageBuffer, exampleToken, upstreamDir } from './constants';
 
 export async function addSomeFiles<T extends [string, string]>(location = dir): Promise<T> {
   const paths: T = [`${location}/image.png`, `${location}/test.json`] as T;
@@ -37,12 +37,6 @@ export async function addAndCommitUsingDugite(
   await GitProcess.exec(['add', '.'], location);
   await runBetween();
   await GitProcess.exec(['commit', '-m', message, `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], location);
-}
-
-export async function addBareUpstream(): Promise<void> {
-  await fs.remove(upstreamDirGitDirectory);
-  await initGitWithBranch(upstreamDir, defaultGitInfo.branch, { bare: true });
-  await addAnUpstream();
 }
 
 export async function createAndSyncRepo2ToRemote(): Promise<void> {

@@ -1,11 +1,9 @@
 import { credentialOn, getRemoteUrl, initGit } from '../src';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { dir, exampleToken, upstreamDir } from './constants';
-import { addBareUpstream } from './utils';
 
 describe('credential', () => {
   beforeEach(async () => {
-    await addBareUpstream();
   });
 
   test('default branch now should be main', async () => {
