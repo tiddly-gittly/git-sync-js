@@ -1,6 +1,6 @@
 # git-sync-js
 
-[Documentation Site](https://github.com/tiddly-gittly/git-sync-js)
+[Documentation Site](https://tiddly-gittly.github.io/git-sync-js/)
 
 JS implementation for [Git-Sync](https://github.com/simonthum/git-sync), a handy script that backup your notes in a git repo to the remote git services.
 
