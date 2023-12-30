@@ -62,9 +62,9 @@ export default {
         items: [
           {
             type: 'doc',
-            docId: 'api-summary',
+            docId: 'README',
             position: 'left',
-            label: 'Tutorial',
+            label: 'README',
           },
           { to: 'api', label: 'API', position: 'left' },
           {
@@ -81,8 +81,8 @@ export default {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
-                to: 'api-summary',
+                label: 'README',
+                to: 'README',
               },
             ],
           },

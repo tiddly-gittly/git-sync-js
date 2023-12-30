@@ -16,4 +16,6 @@ test/mockRepo
 test/mockRepo2
 test/mockUpstreamRepo
 docs/api
+docs/README.md
 .docusaurus
+build
