@@ -33,10 +33,11 @@ module.exports = {
       },
     },
   },
-  rules: {},
-  extends: [
-    'eslint-config-tidgi',
-  ],
+  rules: {
+    'unicorn/prevent-abbreviations': 'off',
+    '@typescript-eslint/no-confusing-void-expression': 'off',
+  },
+  extends: ['eslint-config-tidgi'],
   plugins: [],
   env: {
     browser: true,

@@ -2,14 +2,14 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from 'fs-extra';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, setGlobalConstants, upstreamDir } from './constants';
-import { initGitWithBranch } from '../src/init';
 import { defaultGitInfo } from '../src/defaultGitInfo';
+import { initGitWithBranch } from '../src/init';
+import { dir, setGlobalConstants, upstreamDir } from './constants';
 
 beforeEach(async () => {
   setGlobalConstants();
   await resetMockGitRepositories();
-  return await setUpMockGitRepositories();
+  await setUpMockGitRepositories();
 });
 
 // afterAll(async () => {

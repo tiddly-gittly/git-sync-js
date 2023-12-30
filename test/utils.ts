@@ -1,7 +1,7 @@
 import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
-import { initGitWithBranch } from '../src/init';
 import { defaultGitInfo } from '../src/defaultGitInfo';
+import { initGitWithBranch } from '../src/init';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { dir, exampleImageBuffer, upstreamDir, upstreamDirGitDirectory } from './constants';
 
@@ -17,9 +17,9 @@ export async function addAnUpstream(): Promise<void> {
   await GitProcess.exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], dir);
   /**
        * Need to fetch the remote repo first, otherwise it will say:
-       * 
+       *
        * ```
-       * % git rev-list --count --left-right origin/main...HEAD        
+       * % git rev-list --count --left-right origin/main...HEAD
           fatal: ambiguous argument 'origin/main...HEAD': unknown revision or path not in the working tree.
           Use '--' to separate paths from revisions, like this:
           'git <command> [<revision>...] -- [<file>...]'

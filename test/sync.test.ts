@@ -2,9 +2,10 @@
 import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
 import path from 'path';
-import { assumeSync, getModifiedFileList, getSyncState, SyncState } from '../src/inspect';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
+import { assumeSync, getModifiedFileList, getSyncState, SyncState } from '../src/inspect';
+import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -13,7 +14,6 @@ import {
   upstreamDir,
 } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addBareUpstream, addSomeFiles } from './utils';
-import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -27,7 +27,9 @@ describe('commitFiles', () => {
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      await expect(async () => {
+        await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      }).rejects.toThrowError(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);

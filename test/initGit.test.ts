@@ -1,9 +1,11 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
-import { assumeSync, getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
+import { initGit } from '../src/initGit';
+import { assumeSync, getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
+import { commitFiles } from '../src/sync';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -13,8 +15,6 @@ import {
   upstreamDir,
 } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
-import { commitFiles } from '../src/sync';
-import { initGit } from '../src/initGit';
 
 describe('initGit', () => {
   beforeEach(async () => {
@@ -66,7 +66,9 @@ describe('initGit', () => {
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      await expect(async () => {
+        await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      }).rejects.toThrowError(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);
@@ -89,7 +91,9 @@ describe('initGit', () => {
       await addSomeFiles();
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrowError(new AssumeSyncError('ahead'));
+      await expect(async () => {
+        await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      }).rejects.toThrowError(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);

@@ -1,7 +1,8 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
-import { getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
+import { clone } from '../src/clone';
 import { defaultGitInfo } from '../src/defaultGitInfo';
+import { getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -10,7 +11,6 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
-import { clone } from '../src/clone';
 import { addAndCommitUsingDugite, addSomeFiles } from './utils';
 
 describe('clone', () => {
