@@ -38,7 +38,7 @@ module.exports = {
     '@typescript-eslint/no-confusing-void-expression': 'off',
   },
   extends: ['eslint-config-tidgi'],
-  plugins: [],
+  plugins: ['jest-extended'],
   env: {
     browser: true,
     es6: true,

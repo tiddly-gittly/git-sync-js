@@ -1,7 +1,6 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from 'fs-extra';
-// eslint-disable-next-line unicorn/prevent-abbreviations
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
 import { dir, setGlobalConstants, upstreamDir } from './constants';
@@ -10,7 +9,7 @@ beforeEach(async () => {
   setGlobalConstants();
   await resetMockGitRepositories();
   await setUpMockGitRepositories();
-});
+}, 40_000);
 
 // afterAll(async () => {
 //   return await resetMockGitRepositories();

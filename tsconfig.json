@@ -26,5 +26,6 @@
     "paths": {
       "*": ["src/@types/*"]
     }
-  }
+  },
+  "files": ["test/global.d.ts"]
 }

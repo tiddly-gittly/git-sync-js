@@ -2,6 +2,7 @@
 import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
 import os from 'os';
+import path from 'path';
 import { credentialOff, credentialOn, getGitUrlWithCredential } from '../src/credential';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
@@ -85,19 +86,19 @@ describe('getModifiedFileList', () => {
     const paths = await addSomeFiles();
     const fileList = await getModifiedFileList(dir);
     expect(fileList).toStrictEqual([
-      { filePath: paths[0], fileRelativePath: paths[0].replace(`${dir}/`, ''), type: '??' },
-      { filePath: paths[1], fileRelativePath: paths[1].replace(`${dir}/`, ''), type: '??' },
+      { filePath: path.normalize(paths[0]), fileRelativePath: paths[0].replace(`${dir}/`, ''), type: '??' },
+      { filePath: path.normalize(paths[1]), fileRelativePath: paths[1].replace(`${dir}/`, ''), type: '??' },
     ]);
   });
 
   test('list multiple CJK file names', async () => {
-    const paths: [string, string] = [`${dir}/试试啊.json`, `${dir}/一个破图片.png`];
+    const paths: [string, string] = [path.join(dir, '试试啊.json'), path.join(dir, '一个破图片.png')];
     await fs.writeJSON(paths[0], { test: 'test' });
     await fs.writeFile(paths[1], exampleImageBuffer);
     const fileList = await getModifiedFileList(dir);
     expect(fileList).toStrictEqual([
-      { filePath: paths[0], fileRelativePath: paths[0].replace(`${dir}/`, ''), type: '??' },
-      { filePath: paths[1], fileRelativePath: paths[1].replace(`${dir}/`, ''), type: '??' },
+      { filePath: paths[0], fileRelativePath: '试试啊.json', type: '??' },
+      { filePath: paths[1], fileRelativePath: '一个破图片.png', type: '??' },
     ]);
   });
 });
@@ -210,7 +211,7 @@ describe('getSyncState and getGitRepositoryState', () => {
     });
 
     test('have a mock upstream', async () => {
-      expect(await getRemoteUrl(dir, defaultGitInfo.remote)).toBe(upstreamDir);
+      expect(path.normalize(await getRemoteUrl(dir, defaultGitInfo.remote))).toBe(upstreamDir);
     });
     test('equal to upstream', async () => {
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');

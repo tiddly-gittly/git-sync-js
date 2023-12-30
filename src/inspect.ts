@@ -53,7 +53,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
       return {
         type,
         fileRelativePath,
-        filePath: path.join(wikiFolderPath, fileRelativePath),
+        filePath: path.normalize(path.join(wikiFolderPath, fileRelativePath)),
       };
     })
     .sort((item, item2) => item.fileRelativePath.localeCompare(item2.fileRelativePath, 'zh'));
