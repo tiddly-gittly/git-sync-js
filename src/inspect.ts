@@ -113,7 +113,7 @@ export async function getDefaultBranchName(wikiFolderPath: string): Promise<stri
     const [branchName] = stdout.split('\n');
     // don't return empty string, so we can use ?? syntax
     if (branchName === '') {
-      return;
+      return undefined;
     }
     return branchName;
   } catch {

@@ -15,3 +15,5 @@ dist/
 test/mockRepo
 test/mockRepo2
 test/mockUpstreamRepo
+docs/api
+.docusaurus

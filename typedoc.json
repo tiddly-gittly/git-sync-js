@@ -1,0 +1,14 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "compilerOptions": {
+    "strictNullChecks": false,
+    "skipLibCheck": true,
+    "rootDir": ".",
+  },
+  "readme": "none",
+  "entryDocument": "API.md",
+  "plugin": ["typedoc-plugin-markdown"]
+}
