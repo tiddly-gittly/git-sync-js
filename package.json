@@ -19,8 +19,9 @@
   ],
   "scripts": {
     "prepublishOnly": "npm run clean && npm run compile",
-    "test": "rimraf test/mockRepo test/mockUpstreamRepo && jest",
+    "test": "npm run clean:test && jest",
     "clean": "rimraf --no-glob dist",
+    "clean:test": "rimraf test/mockRepo test/mockUpstreamRepo",
     "compile": "tsc",
     "docs": "docs-ts",
     "lint": "eslint --ext ts .",

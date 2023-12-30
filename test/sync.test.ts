@@ -29,14 +29,16 @@ describe('commitFiles', () => {
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
       await expect(async () => {
         await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
-      }).rejects.toThrowError(new AssumeSyncError('ahead'));
+      }).rejects.toThrow(new AssumeSyncError('ahead'));
 
       // modify upstream
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
-      // it is equal until we fetch the latest remote
+      // local repo think it is ahead until we fetch the latest remote (it doesn't know remote has been updated)
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+      // although we add the same file, but the commit is different in git's view, so it is diverged (`1 1` means 1 commit in local, 1 commit in remote)
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('diverged');
     });
   });
 

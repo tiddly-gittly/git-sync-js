@@ -16,15 +16,15 @@ export async function addSomeFiles<T extends [string, string]>(location = dir): 
 export async function addAnUpstream(): Promise<void> {
   await GitProcess.exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], dir);
   /**
-       * Need to fetch the remote repo first, otherwise it will say:
-       *
-       * ```
-       * % git rev-list --count --left-right origin/main...HEAD
-          fatal: ambiguous argument 'origin/main...HEAD': unknown revision or path not in the working tree.
-          Use '--' to separate paths from revisions, like this:
-          'git <command> [<revision>...] -- [<file>...]'
-       * ```
-       */
+   * Need to fetch the remote repo first, otherwise it will say:
+   *
+   * ```
+   * % git rev-list --count --left-right origin/main...HEAD
+      fatal: ambiguous argument 'origin/main...HEAD': unknown revision or path not in the working tree.
+      Use '--' to separate paths from revisions, like this:
+      'git <command> [<revision>...] -- [<file>...]'
+    * ```
+    */
   await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
 }
 

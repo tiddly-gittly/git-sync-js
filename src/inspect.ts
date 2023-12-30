@@ -141,23 +141,36 @@ export async function getSyncState(dir: string, defaultBranchName: string, remot
     });
   logProgress(GitStep.CheckingLocalSyncState);
   remoteName = remoteName ?? (await getRemoteName(dir, defaultBranchName));
-  const { stdout, stderr } = await GitProcess.exec(['rev-list', '--count', '--left-right', `${remoteName}/${defaultBranchName}...HEAD`], dir);
-  logDebug(`Checking sync state with upstream, stdout:\n${stdout}\n(stdout end)`, GitStep.CheckingLocalSyncState);
+  const gitArgs = ['rev-list', '--count', '--left-right', `${remoteName}/${defaultBranchName}...HEAD`];
+  const { stdout, stderr } = await GitProcess.exec(gitArgs, dir);
+  logDebug(`Checking sync state with upstream, command: \`git ${gitArgs.join(' ')}\` , stdout:\n${stdout}\n(stdout end)`, GitStep.CheckingLocalSyncState);
   if (stderr.length > 0) {
     logDebug(`Have problem checking sync state with upstream,stderr:\n${stderr}\n(stderr end)`, GitStep.CheckingLocalSyncState);
   }
   if (stdout === '') {
     return 'noUpstreamOrBareUpstream';
   }
+  /**
+   * checks for the output 0 0, which means there are no differences between the local and remote branches. If this is the case, the function returns 'equal'.
+   */
   if (/0\t0/.exec(stdout) !== null) {
     return 'equal';
   }
+  /**
+   * The pattern /0\t\d+/ checks if there are commits on the current HEAD that are not on the remote branch (e.g., 0 2). If this pattern matches, the function returns 'ahead'.
+   */
   if (/0\t\d+/.exec(stdout) !== null) {
     return 'ahead';
   }
+  /**
+   * The pattern /\d+\t0/ checks if there are commits on the remote branch that are not on the current HEAD (e.g., 2 0). If this pattern matches, the function returns 'behind'.
+   */
   if (/\d+\t0/.exec(stdout) !== null) {
     return 'behind';
   }
+  /**
+   * If none of these patterns match, the function returns 'diverged'. For example, the output `1 1` will indicates that there is one commit on the origin/main branch that is not on your current HEAD, and also one commit on your current HEAD that is not on the origin/main branch.
+   */
   return 'diverged';
 }
 

@@ -22,11 +22,15 @@ async function setUpMockGitRepositories() {
   if (!(await fs.pathExists(upstreamDir))) {
     await fs.mkdirp(upstreamDir);
   }
-  await initGitWithBranch(dir);
-  await initGitWithBranch(upstreamDir, defaultGitInfo.branch);
+  await Promise.all([
+    initGitWithBranch(dir),
+    initGitWithBranch(upstreamDir, defaultGitInfo.branch),
+  ]);
 }
 
 async function resetMockGitRepositories() {
-  await fs.remove(dir);
-  await fs.remove(upstreamDir);
+  await Promise.all([
+    fs.remove(dir),
+    fs.remove(upstreamDir),
+  ]);
 }
