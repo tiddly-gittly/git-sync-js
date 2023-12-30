@@ -108,79 +108,83 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   }
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.FetchingData);
-  await GitProcess.exec(['fetch', remoteName, defaultBranchName], dir);
-  let exitCode = 0;
-  let stderr: string | undefined;
-  const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, remoteName, logger);
-  switch (syncStateAfterCommit) {
-    case 'equal': {
-      logProgress(GitStep.NoNeedToSync);
-      await credentialOff(dir, remoteUrl);
-      return;
-    }
-    case 'noUpstreamOrBareUpstream': {
-      logProgress(GitStep.NoUpstreamCantPush);
-      // try push, if success, means it is bare, otherwise, it is no upstream
-      try {
+  try {
+    await GitProcess.exec(['fetch', remoteName, defaultBranchName], dir);
+    let exitCode = 0;
+    let stderr: string | undefined;
+    const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, remoteName, logger);
+    switch (syncStateAfterCommit) {
+      case 'equal': {
+        logProgress(GitStep.NoNeedToSync);
+        return;
+      }
+      case 'noUpstreamOrBareUpstream': {
+        logProgress(GitStep.NoUpstreamCantPush);
+        // try push, if success, means it is bare, otherwise, it is no upstream
+        try {
+          await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
+          break;
+        } catch (error) {
+          logWarn(
+            `${JSON.stringify({ dir, remoteUrl, userInfo })}, remoteUrl may be not valid, noUpstreamOrBareUpstream after credentialOn`,
+            GitStep.NoUpstreamCantPush,
+          );
+          throw error;
+        }
+      }
+      case 'ahead': {
+        logProgress(GitStep.LocalAheadStartUpload);
         await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
         break;
-      } catch (error) {
-        logWarn(
-          `${JSON.stringify({ dir, remoteUrl, userInfo })}, remoteUrl may be not valid, noUpstreamOrBareUpstream after credentialOn`,
-          GitStep.NoUpstreamCantPush,
-        );
-        throw error;
       }
-    }
-    case 'ahead': {
-      logProgress(GitStep.LocalAheadStartUpload);
-      await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
-      break;
-    }
-    case 'behind': {
-      logProgress(GitStep.LocalStateBehindSync);
-      await mergeUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
-      break;
-    }
-    case 'diverged': {
-      logProgress(GitStep.LocalStateDivergeRebase);
-      ({ exitCode, stderr } = await GitProcess.exec(['rebase', `${remoteName}/${defaultBranchName}`], dir));
-      logProgress(GitStep.RebaseResultChecking);
-      if (exitCode !== 0) {
-        logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseResultChecking);
+      case 'behind': {
+        logProgress(GitStep.LocalStateBehindSync);
+        await mergeUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
+        break;
       }
-      if (
-        exitCode === 0 &&
-        (await getGitRepositoryState(dir, logger)).length === 0 &&
-        (await getSyncState(dir, defaultBranchName, remoteName, logger)) === 'ahead'
-      ) {
-        logProgress(GitStep.RebaseSucceed);
-      } else {
-        await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
-        logProgress(GitStep.RebaseConflictNeedsResolve);
+      case 'diverged': {
+        logProgress(GitStep.LocalStateDivergeRebase);
+        ({ exitCode, stderr } = await GitProcess.exec(['rebase', `${remoteName}/${defaultBranchName}`], dir));
+        logProgress(GitStep.RebaseResultChecking);
+        if (exitCode !== 0) {
+          logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseResultChecking);
+        }
+        if (
+          exitCode === 0 &&
+          (await getGitRepositoryState(dir, logger)).length === 0 &&
+          (await getSyncState(dir, defaultBranchName, remoteName, logger)) === 'ahead'
+        ) {
+          logProgress(GitStep.RebaseSucceed);
+        } else {
+          await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger);
+          logProgress(GitStep.RebaseConflictNeedsResolve);
+        }
+        await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
+        break;
       }
-      await pushUpstream(dir, defaultBranchName, remoteName, userInfo, logger);
-      break;
-    }
-    default: {
-      logProgress(GitStep.SyncFailedAlgorithmWrong);
-    }
-  }
-  await credentialOff(dir, remoteUrl);
-  if (exitCode === 0) {
-    logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
-    await assumeSync(dir, defaultBranchName, remoteName, logger);
-    logProgress(GitStep.SynchronizationFinish);
-  } else {
-    switch (exitCode) {
-      // "message":"exitCode: 128, stderr of git push: fatal: unable to access 'https://github.com/tiddly-gittly/TiddlyWiki-Chinese-Tutorial.git/': LibreSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443 \n"
-      case 128: {
-        throw new GitPullPushError(options, stderr ?? '');
-      }
-      // TODO: handle auth expire and throw here
       default: {
-        throw new GitPullPushError(options, stderr ?? '');
+        logProgress(GitStep.SyncFailedAlgorithmWrong);
       }
     }
+
+    if (exitCode === 0) {
+      logProgress(GitStep.PerformLastCheckBeforeSynchronizationFinish);
+      await assumeSync(dir, defaultBranchName, remoteName, logger);
+      logProgress(GitStep.SynchronizationFinish);
+    } else {
+      switch (exitCode) {
+        // "message":"exitCode: 128, stderr of git push: fatal: unable to access 'https://github.com/tiddly-gittly/TiddlyWiki-Chinese-Tutorial.git/': LibreSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443 \n"
+        case 128: {
+          throw new GitPullPushError(options, stderr ?? '');
+        }
+        // TODO: handle auth expire and throw here
+        default: {
+          throw new GitPullPushError(options, stderr ?? '');
+        }
+      }
+    }
+  } finally {
+    // always restore original remoteUrl without token
+    await credentialOff(dir, remoteUrl);
   }
 }

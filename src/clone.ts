@@ -61,12 +61,15 @@ export async function clone(options: {
   logDebug(`Successfully Running git init for clone in dir ${dir}`, GitStep.PrepareCloneOnlineWiki);
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
-  logProgress(GitStep.StartFetchingFromGithubRemote);
-  const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', remoteName, `${branch}:${branch}`], dir);
-  await credentialOff(dir, remoteName, remoteUrl);
-  if (exitCode === 0) {
-    logProgress(GitStep.SynchronizationFinish);
-  } else {
-    throw new GitPullPushError(options, pullStdError);
+  try {
+    logProgress(GitStep.StartFetchingFromGithubRemote);
+    const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', remoteName, `${branch}:${branch}`], dir);
+    if (exitCode === 0) {
+      logProgress(GitStep.SynchronizationFinish);
+    } else {
+      throw new GitPullPushError(options, pullStdError);
+    }
+  } finally {
+    await credentialOff(dir, remoteName, remoteUrl);
   }
 }
