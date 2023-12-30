@@ -39,6 +39,7 @@ export enum GitStep {
   CheckingLocalSyncState = 'CheckingLocalSyncState',
   CommitComplete = 'CommitComplete',
   FetchingData = 'FetchingData',
+  FinishForcePull = 'FinishForcePull',
   GitMerge = 'GitMerge',
   GitMergeComplete = 'GitMergeComplete',
   GitMergeFailed = 'GitMergeFailed',
@@ -62,7 +63,9 @@ export enum GitStep {
   StartBackupToGitRemote = 'StartBackupToGitRemote',
   StartConfiguringGithubRemoteRepository = 'StartConfiguringGithubRemoteRepository',
   StartFetchingFromGithubRemote = 'StartFetchingFromGithubRemote',
+  StartForcePull = 'StartForcePull',
   StartGitInitialization = 'StartGitInitialization',
+  StartResettingLocalToRemote = 'StartResettingLocalToRemote',
   /** this means our algorithm have some problems */
   SyncFailedAlgorithmWrong = 'SyncFailedAlgorithmWrong',
   SynchronizationFinish = 'SynchronizationFinish',

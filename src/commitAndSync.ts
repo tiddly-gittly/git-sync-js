@@ -4,7 +4,7 @@ import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
 import { assumeSync, getDefaultBranchName, getGitRepositoryState, getRemoteName, getSyncState, haveLocalChanges } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
-import { commitFiles, continueRebase, mergeUpstream, pushUpstream } from './sync';
+import { commitFiles, continueRebase, fetchRemote, mergeUpstream, pushUpstream } from './sync';
 
 export interface ICommitAndSyncOptions {
   /** the commit message */
@@ -109,7 +109,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.FetchingData);
   try {
-    await GitProcess.exec(['fetch', remoteName, defaultBranchName], dir);
+    await fetchRemote(dir, remoteName, defaultBranchName);
     let exitCode = 0;
     let stderr: string | undefined;
     const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, remoteName, logger);

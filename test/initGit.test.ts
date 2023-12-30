@@ -1,12 +1,11 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
-import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
 import { initGitWithBranch } from '../src/init';
 import { initGit } from '../src/initGit';
 import { assumeSync, getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
-import { commitFiles, pushUpstream } from '../src/sync';
+import { commitFiles, fetchRemote, pushUpstream } from '../src/sync';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -61,7 +60,7 @@ describe('initGit', () => {
         defaultGitInfo,
       });
       // nested describe > beforeEach execute first, so after we add upstream, the .git folder is deleted and recreated, we need to manually fetch here
-      await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
+      await fetchRemote(dir, defaultGitInfo.remote, defaultGitInfo.branch);
       // basically same as other test suit
 
       // syncImmediately: false, so we don't have a remote yet
@@ -104,7 +103,7 @@ describe('initGit', () => {
       await addSomeFiles(upstreamDir);
       await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
       // it is ahead until we push the latest remote
-      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
+      await fetchRemote(dir, defaultGitInfo.remote);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
       await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');

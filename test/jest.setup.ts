@@ -4,7 +4,7 @@
 import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
-import { dir, setGlobalConstants, upstreamDir } from './constants';
+import { dir, dir2, setGlobalConstants, upstreamDir } from './constants';
 
 beforeEach(async () => {
   setGlobalConstants();
@@ -27,6 +27,7 @@ export async function setUpMockGitRepositories() {
 export async function resetMockGitRepositories() {
   await Promise.all([
     fs.remove(dir),
+    fs.remove(dir2),
     fs.remove(upstreamDir),
   ]);
 }

@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
+import { commitFiles, fetchRemote, mergeUpstream, pushUpstream } from '../src/sync';
 import { dir, dir2, exampleImageBuffer, exampleRemoteUrl, exampleToken, upstreamDir } from './constants';
 
 export async function addSomeFiles<T extends [string, string]>(location = dir): Promise<T> {
@@ -26,7 +26,7 @@ export async function addAnUpstream(repoPath = dir): Promise<void> {
       'git <command> [<revision>...] -- [<file>...]'
     * ```
     */
-  await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], repoPath);
+  await fetchRemote(repoPath, defaultGitInfo.remote, defaultGitInfo.branch);
 }
 
 export async function addHTTPRemote(remoteName = defaultGitInfo.remote, remoteUrl = exampleRemoteUrl, directory = dir): Promise<void> {
@@ -55,7 +55,7 @@ export async function createAndSyncRepo2ToRemote(): Promise<void> {
  * Have to run `createAndSyncRepo2ToRemote()` before this.
  */
 export async function anotherRepo2PushSomeFiles() {
-  await GitProcess.exec(['fetch', defaultGitInfo.remote], dir2);
+  await fetchRemote(dir2, defaultGitInfo.remote);
   try {
     // this can fail if dir1 never push its initial commit to the remote, so remote is still bare and can't be pull. It is OK to ignore this error.
     await mergeUpstream(dir2, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });

@@ -1,11 +1,10 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
-import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
 import path from 'path';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
 import { assumeSync, getModifiedFileList, getSyncState, SyncState } from '../src/inspect';
-import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
+import { commitFiles, fetchRemote, mergeUpstream, pushUpstream } from '../src/sync';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -72,7 +71,7 @@ describe('mergeUpstream', () => {
 
     await anotherRepo2PushSomeFiles();
 
-    await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
+    await fetchRemote(dir, defaultGitInfo.remote);
     expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
     await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
     expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');

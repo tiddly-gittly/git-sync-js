@@ -151,3 +151,15 @@ export async function continueRebase(dir: string, username: string, email: strin
   }
   logProgress(GitStep.CantSyncInSpecialGitStateAutoFixSucceed);
 }
+
+/**
+ * Simply calling git fetch.
+ * @param branch if not provided, will fetch all branches
+ */
+export async function fetchRemote(dir: string, remoteName: string, branch?: string) {
+  if (branch === undefined) {
+    await GitProcess.exec(['fetch', remoteName], dir);
+  } else {
+    await GitProcess.exec(['fetch', remoteName, branch], dir);
+  }
+}

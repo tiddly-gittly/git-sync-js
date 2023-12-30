@@ -6,6 +6,7 @@ export * from './initGit';
 export * from './credential';
 export * from './defaultGitInfo';
 export * from './errors';
+export * from './forcePull';
 export * from './inspect';
 export * from './interface';
 export * from './sync';

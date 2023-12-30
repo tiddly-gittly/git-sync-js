@@ -19,7 +19,7 @@ import {
   haveLocalChanges,
   SyncState,
 } from '../src/inspect';
-import { pushUpstream } from '../src/sync';
+import { fetchRemote, pushUpstream } from '../src/sync';
 import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
@@ -212,7 +212,7 @@ describe('getSyncState and getGitRepositoryState', () => {
         await createAndSyncRepo2ToRemote();
         await anotherRepo2PushSomeFiles();
         // it is equal until we fetch the latest remote
-        await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
+        await fetchRemote(dir, defaultGitInfo.remote);
         expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
         await expect(async () => {
           await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
@@ -238,11 +238,11 @@ describe('getSyncState and getGitRepositoryState', () => {
         expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
 
         // it is equal until we fetch the latest remote
-        await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
+        await fetchRemote(dir, defaultGitInfo.remote);
         expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('diverged');
         await expect(async () => {
           await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
-        }).rejects.toThrowError(new AssumeSyncError('diverged'));
+        }).rejects.toThrow(new AssumeSyncError('diverged'));
       });
     });
   });
