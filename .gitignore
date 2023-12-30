@@ -13,4 +13,5 @@ flycheck_*
 .dccache
 dist/
 test/mockRepo
+test/mockRepo2
 test/mockUpstreamRepo

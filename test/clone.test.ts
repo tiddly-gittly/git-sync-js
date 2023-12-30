@@ -11,12 +11,15 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   upstreamDir,
 } from './constants';
-import { addAndCommitUsingDugite, addSomeFiles } from './utils';
+import { addAndCommitUsingDugite, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
 
 describe('clone', () => {
   beforeEach(async () => {
     // remove dir's .git folder in this test suit, so we have a clean folder to clone
     await fs.remove(gitDirectory);
+    // repo2 modify the remote, make us behind
+    await createAndSyncRepo2ToRemote();
+    await anotherRepo2PushSomeFiles();
   });
 
   describe('with upstream', () => {

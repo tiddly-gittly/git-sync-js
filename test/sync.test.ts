@@ -10,10 +10,8 @@ import {
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir,
   exampleToken,
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  upstreamDir,
 } from './constants';
-import { addAndCommitUsingDugite, addAnUpstream, addBareUpstream, addSomeFiles } from './utils';
+import { addAnUpstream, addBareUpstream, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
 
 describe('commitFiles', () => {
   describe('with upstream', () => {
@@ -21,24 +19,15 @@ describe('commitFiles', () => {
       await addAnUpstream();
     });
 
-    test('equal to upstream that using dugite add', async () => {
-      const sharedCommitMessage = 'some commit message';
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
+    test('not change sync state between upstream', async () => {
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
       await addSomeFiles();
+      const sharedCommitMessage = 'some commit message';
       await commitFiles(dir, defaultGitInfo.gitUserName, defaultGitInfo.email, sharedCommitMessage);
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
       await expect(async () => {
         await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
-      }).rejects.toThrow(new AssumeSyncError('ahead'));
-
-      // modify upstream
-      await addSomeFiles(upstreamDir);
-      await addAndCommitUsingDugite(upstreamDir, () => {}, sharedCommitMessage);
-      // local repo think it is ahead until we fetch the latest remote (it doesn't know remote has been updated)
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('ahead');
-      await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
-      // although we add the same file, but the commit is different in git's view, so it is diverged (`1 1` means 1 commit in local, 1 commit in remote)
-      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('diverged');
+      }).rejects.toThrow(new AssumeSyncError('noUpstreamOrBareUpstream'));
     });
   });
 
@@ -73,13 +62,20 @@ describe('pushUpstream', () => {
 describe('mergeUpstream', () => {
   describe('with upstream', () => {
     beforeEach(async () => {
-      await addAnUpstream();
+      await Promise.all([
+        addAnUpstream(),
+        createAndSyncRepo2ToRemote(),
+      ]);
     });
 
     test('equal to upstream after pull', async () => {
+      // local repo with init commit is diverged with upstream with init commit
+      expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
+      await pushUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('equal');
-      await addSomeFiles(upstreamDir);
-      await commitFiles(upstreamDir, defaultGitInfo.gitUserName, defaultGitInfo.email);
+
+      await anotherRepo2PushSomeFiles();
+
       await GitProcess.exec(['fetch', defaultGitInfo.remote], dir);
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('behind');
       await mergeUpstream(dir, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });

@@ -10,8 +10,12 @@ let repoName = Math.random().toString();
 /**
  * mockRepoLocation
  */
-// eslint-disable-next-line unicorn/prevent-abbreviations
 export let dir: string;
+/**
+ * Another location to simulate you have two places sync to one upstream repo (Github).
+ * Not all test use this, so handle this in each test.
+ */
+export let dir2: string;
 export let upstreamDir: string;
 
 export let gitDirectory: string;
@@ -33,6 +37,7 @@ export const setGlobalConstants = (): void => {
    */
   // eslint-disable-next-line unicorn/prevent-abbreviations
   dir = path.join(__dirname, 'mockRepo', repoName);
+  dir2 = path.join(__dirname, 'mockRepo2', repoName);
   upstreamDir = path.join(__dirname, 'mockUpstreamRepo', repoName);
 
   gitDirectory = path.join(dir, '.git');

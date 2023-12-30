@@ -3,7 +3,8 @@ import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
 // eslint-disable-next-line unicorn/prevent-abbreviations
-import { dir, exampleImageBuffer, upstreamDir, upstreamDirGitDirectory } from './constants';
+import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
+import { dir, dir2, exampleImageBuffer, exampleToken, upstreamDir, upstreamDirGitDirectory } from './constants';
 
 export async function addSomeFiles<T extends [string, string]>(location = dir): Promise<T> {
   const paths: T = [`${location}/image.png`, `${location}/test.json`] as T;
@@ -13,8 +14,8 @@ export async function addSomeFiles<T extends [string, string]>(location = dir): 
   return paths;
 }
 
-export async function addAnUpstream(): Promise<void> {
-  await GitProcess.exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], dir);
+export async function addAnUpstream(repoPath = dir): Promise<void> {
+  await GitProcess.exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], repoPath);
   /**
    * Need to fetch the remote repo first, otherwise it will say:
    *
@@ -25,7 +26,7 @@ export async function addAnUpstream(): Promise<void> {
       'git <command> [<revision>...] -- [<file>...]'
     * ```
     */
-  await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], dir);
+  await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], repoPath);
 }
 
 export async function addAndCommitUsingDugite(
@@ -42,4 +43,25 @@ export async function addBareUpstream(): Promise<void> {
   await fs.remove(upstreamDirGitDirectory);
   await initGitWithBranch(upstreamDir, defaultGitInfo.branch, { bare: true });
   await addAnUpstream();
+}
+
+export async function createAndSyncRepo2ToRemote(): Promise<void> {
+  await fs.mkdirp(dir2);
+  await initGitWithBranch(dir2, defaultGitInfo.branch, { initialCommit: false, bare: false });
+  await addAnUpstream(dir2);
+}
+
+/**
+ * Simulate another repo push to upstream, letting our local repo being behind.
+ * Have to run `createAndSyncRepo2ToRemote()` before this.
+ */
+export async function anotherRepo2PushSomeFiles() {
+  await GitProcess.exec(['fetch', defaultGitInfo.remote], dir2);
+  try {
+    // this can fail if dir1 never push its initial commit to the remote, so remote is still bare and can't be pull. It is OK to ignore this error.
+    await mergeUpstream(dir2, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
+  } catch {}
+  await addSomeFiles(dir2);
+  await commitFiles(dir2, defaultGitInfo.gitUserName, defaultGitInfo.email);
+  await pushUpstream(dir2, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
 }

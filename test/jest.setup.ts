@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/promise-function-async */
 /* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from 'fs-extra';
@@ -15,20 +16,15 @@ beforeEach(async () => {
 //   return await resetMockGitRepositories();
 // });
 
-async function setUpMockGitRepositories() {
-  if (!(await fs.pathExists(dir))) {
-    await fs.mkdirp(dir);
-  }
-  if (!(await fs.pathExists(upstreamDir))) {
-    await fs.mkdirp(upstreamDir);
-  }
+export async function setUpMockGitRepositories() {
   await Promise.all([
-    initGitWithBranch(dir),
-    initGitWithBranch(upstreamDir, defaultGitInfo.branch),
+    // simulate situation that local repo is initialized first, and upstream repo (Github) is empty & bare, and is initialized later
+    fs.mkdirp(dir).then(() => initGitWithBranch(dir, defaultGitInfo.branch, { initialCommit: true })),
+    fs.mkdirp(upstreamDir).then(() => initGitWithBranch(upstreamDir, defaultGitInfo.branch, { initialCommit: false, bare: true })),
   ]);
 }
 
-async function resetMockGitRepositories() {
+export async function resetMockGitRepositories() {
   await Promise.all([
     fs.remove(dir),
     fs.remove(upstreamDir),
