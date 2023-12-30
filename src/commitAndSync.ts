@@ -1,15 +1,21 @@
 import { GitProcess } from 'dugite';
-import { credentialOn, credentialOff } from './credential';
-import { SyncParameterMissingError, GitPullPushError, CantSyncGitNotInitializedError } from './errors';
-import { assumeSync, getDefaultBranchName, getGitRepositoryState, getRemoteName, getSyncState, haveLocalChanges } from './inspect';
-import { IGitUserInfos, ILogger, GitStep } from './interface';
+import { credentialOff, credentialOn } from './credential';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
+import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
+import { assumeSync, getDefaultBranchName, getGitRepositoryState, getRemoteName, getSyncState, haveLocalChanges } from './inspect';
+import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { commitFiles, continueRebase, mergeUpstream, pushUpstream } from './sync';
 
 export interface ICommitAndSyncOptions {
+  /** the commit message */
+  commitMessage?: string;
+  commitOnly?: boolean;
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative */
   dir: string;
-  commitOnly?: boolean;
+  /** if you want to use a dynamic .gitignore, you can passing an array contains filepaths that want to ignore */
+  filesToIgnore?: string[];
+  logger?: ILogger;
   /** the storage service url we are sync to, for example your github repo url
    * When empty, and commitOnly===true, it means we just want commit, without sync
    */
@@ -18,12 +24,6 @@ export interface ICommitAndSyncOptions {
    * When empty, and commitOnly===true, it means we just want commit, without sync
    */
   userInfo?: IGitUserInfos;
-  /** the commit message */
-  commitMessage?: string;
-  logger?: ILogger;
-  defaultGitInfo?: typeof defaultDefaultGitInfo;
-  /** if you want to use a dynamic .gitignore, you can passing an array contains filepaths that want to ignore */
-  filesToIgnore?: string[];
 }
 /**
  * `git add .` + `git commit` + `git rebase` or something that can sync bi-directional

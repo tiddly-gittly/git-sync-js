@@ -1,32 +1,32 @@
 import { truncate } from 'lodash';
+import { commitAndSync } from './commitAndSync';
+import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { SyncParameterMissingError } from './errors';
 import { initGitWithBranch } from './init';
-import { IGitUserInfosWithoutToken, IGitUserInfos, ILogger, GitStep } from './interface';
-import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
+import { GitStep, IGitUserInfos, IGitUserInfosWithoutToken, ILogger } from './interface';
 import { commitFiles } from './sync';
-import { commitAndSync } from './commitAndSync';
 
 export type IInitGitOptions = IInitGitOptionsSyncImmediately | IInitGitOptionsNotSync;
 export interface IInitGitOptionsSyncImmediately {
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative */
   dir: string;
-  /** should we sync after git init? */
-  syncImmediately: true;
+  logger?: ILogger;
   /** only required if syncImmediately is true, the storage service url we are sync to, for example your github repo url */
   remoteUrl: string;
+  /** should we sync after git init? */
+  syncImmediately: true;
   /** user info used in the commit message */
   userInfo: IGitUserInfos;
-  logger?: ILogger;
-  defaultGitInfo?: typeof defaultDefaultGitInfo;
 }
 export interface IInitGitOptionsNotSync {
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative */
   dir: string;
+  logger?: ILogger;
   /** should we sync after git init? */
   syncImmediately?: false;
   userInfo?: IGitUserInfosWithoutToken | IGitUserInfos;
-  logger?: ILogger;
-  defaultGitInfo?: typeof defaultDefaultGitInfo;
 }
 
 export async function initGit(options: IInitGitOptions): Promise<void> {
@@ -60,9 +60,11 @@ export async function initGit(options: IInitGitOptions): Promise<void> {
     throw new SyncParameterMissingError('remoteUrl');
   }
   logDebug(
-    `Calling commitAndSync() from initGit() Using gitUrl ${remoteUrl} with gitUserName ${gitUserName} and accessToken ${truncate(userInfo?.accessToken, {
-      length: 24,
-    })}`,
+    `Calling commitAndSync() from initGit() Using gitUrl ${remoteUrl} with gitUserName ${gitUserName} and accessToken ${
+      truncate(userInfo?.accessToken, {
+        length: 24,
+      })
+    }`,
     GitStep.StartConfiguringGithubRemoteRepository,
   );
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);

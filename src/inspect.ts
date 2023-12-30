@@ -1,21 +1,21 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable unicorn/prevent-abbreviations */
+import { GitProcess } from 'dugite';
 import fs from 'fs-extra';
-import path from 'path';
 import { listRemotes } from 'isomorphic-git';
 import { compact } from 'lodash';
-import { GitProcess } from 'dugite';
+import path from 'path';
 import url from 'url';
-import { GitStep, ILogger } from './interface';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
+import { GitStep, ILogger } from './interface';
 
-const gitEscapeToEncodedUri = (str: string): string => str.replace(/\\(\d{3})/g, (_: unknown, $1: string) => `%${Number.parseInt($1, 8).toString(16)}`);
+const gitEscapeToEncodedUri = (str: string): string => str.replaceAll(/\\(\d{3})/g, (_: unknown, $1: string) => `%${Number.parseInt($1, 8).toString(16)}`);
 const decodeGitEscape = (rawString: string): string => decodeURIComponent(gitEscapeToEncodedUri(rawString));
 
 export interface ModifiedFileList {
-  type: string;
-  fileRelativePath: string;
   filePath: string;
+  fileRelativePath: string;
+  type: string;
 }
 /**
  * Get modified files and modify type in a folder
@@ -47,8 +47,8 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
        * But actually those 346 226 are in radix 8 , if we transform it to radix 16 and add prefix % we can make it uri component.
        * And it should not be parsed in groups of three, because only the CJK between 0x0800 - 0xffff are encoded into three bytes; so we should just replace all the \\\d{3} with hexadecimal, and then give it to the decodeURIComponent to parse.
        */
-      const isSafeUtf8UnescapedString =
-        rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') && !rawFileRelativePath.includes(',');
+      const isSafeUtf8UnescapedString = rawFileRelativePath.startsWith('"') && rawFileRelativePath.endsWith('"') && !rawFileRelativePath.includes(';') &&
+        !rawFileRelativePath.includes(',');
       const fileRelativePath = isSafeUtf8UnescapedString ? decodeGitEscape(rawFileRelativePath).replace(/^"/, '').replace(/"$/, '') : rawFileRelativePath;
       return {
         type,
@@ -98,7 +98,7 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  return !!matchResult?.some?.((match: string) => Boolean(match));
+  return !!matchResult?.some?.(Boolean);
 }
 
 /**

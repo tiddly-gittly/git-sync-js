@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { GitProcess, IGitResult } from 'dugite';
-import { listFiles, remove } from 'isomorphic-git';
 import fs from 'fs-extra';
+import { listFiles, remove } from 'isomorphic-git';
 
 import { CantSyncInSpecialGitStateAutoFixFailed, GitPullPushError, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
@@ -36,7 +36,9 @@ export async function commitFiles(
   if (filesToIgnore.length > 0) {
     const stagedFilesToIgnore = filesToIgnore.filter((file) => stagedFiles.includes(file));
     if (stagedFilesToIgnore.length > 0) {
-      await Promise.all(stagedFilesToIgnore.map(async (file) => await remove({ dir, filepath: file, fs })));
+      await Promise.all(stagedFilesToIgnore.map(async (file) => {
+        await remove({ dir, filepath: file, fs });
+      }));
     }
   }
 

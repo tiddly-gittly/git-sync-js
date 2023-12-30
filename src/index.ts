@@ -1,11 +1,11 @@
 /** primary functions */
-export * from './initGit';
-export * from './commitAndSync';
 export * from './clone';
+export * from './commitAndSync';
+export * from './initGit';
 /** utils */
-export * from './interface';
+export * from './credential';
 export * from './defaultGitInfo';
 export * from './errors';
-export * from './credential';
 export * from './inspect';
+export * from './interface';
 export * from './sync';

@@ -1,21 +1,21 @@
 import { GitProcess } from 'dugite';
 import { truncate } from 'lodash';
-import { credentialOn, credentialOff } from './credential';
-import { SyncParameterMissingError, GitPullPushError } from './errors';
-import { getRemoteName } from './inspect';
-import { IGitUserInfos, ILogger, GitStep } from './interface';
+import { credentialOff, credentialOn } from './credential';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
+import { GitPullPushError, SyncParameterMissingError } from './errors';
 import { initGitWithBranch } from './init';
+import { getRemoteName } from './inspect';
+import { GitStep, IGitUserInfos, ILogger } from './interface';
 
 export async function clone(options: {
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative, should exist before function call */
   dir: string;
+  logger?: ILogger;
   /** the storage service url we are sync to, for example your github repo url */
   remoteUrl?: string;
   /** user info used in the commit message */
   userInfo?: IGitUserInfos;
-  logger?: ILogger;
-  defaultGitInfo?: typeof defaultDefaultGitInfo;
 }): Promise<void> {
   const { dir, remoteUrl, userInfo, logger, defaultGitInfo = defaultDefaultGitInfo } = options;
   const { gitUserName, branch } = userInfo ?? defaultGitInfo;
@@ -64,9 +64,9 @@ export async function clone(options: {
   logProgress(GitStep.StartFetchingFromGithubRemote);
   const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', remoteName, `${branch}:${branch}`], dir);
   await credentialOff(dir, remoteName, remoteUrl);
-  if (exitCode !== 0) {
-    throw new GitPullPushError(options, pullStdError);
-  } else {
+  if (exitCode === 0) {
     logProgress(GitStep.SynchronizationFinish);
+  } else {
+    throw new GitPullPushError(options, pullStdError);
   }
 }
