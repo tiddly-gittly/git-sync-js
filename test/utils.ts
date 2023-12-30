@@ -4,7 +4,7 @@ import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { commitFiles, mergeUpstream, pushUpstream } from '../src/sync';
-import { dir, dir2, exampleImageBuffer, exampleToken, upstreamDir } from './constants';
+import { dir, dir2, exampleImageBuffer, exampleRemoteUrl, exampleToken, upstreamDir } from './constants';
 
 export async function addSomeFiles<T extends [string, string]>(location = dir): Promise<T> {
   const paths: T = [`${location}/image.png`, `${location}/test.json`] as T;
@@ -27,6 +27,11 @@ export async function addAnUpstream(repoPath = dir): Promise<void> {
     * ```
     */
   await GitProcess.exec(['fetch', defaultGitInfo.remote, defaultGitInfo.branch], repoPath);
+}
+
+export async function addHTTPRemote(remoteName = defaultGitInfo.remote, remoteUrl = exampleRemoteUrl, directory = dir): Promise<void> {
+  await GitProcess.exec(['remote', 'add', remoteName, remoteUrl], directory);
+  await GitProcess.exec(['remote', 'set-url', remoteName, remoteUrl], directory);
 }
 
 export async function addAndCommitUsingDugite(

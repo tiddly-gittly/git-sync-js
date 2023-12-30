@@ -46,7 +46,7 @@ export const setGlobalConstants = (): void => {
   gitSyncRepoDirectoryGitDirectory = path.join(gitSyncRepoDirectory, '.git');
 };
 
-export const exampleRepoName = 'tiddly-gittly/git-sync-js';
+export const exampleRepoName = 'tiddlygit-test/wiki';
 /**
  * In TidGi, we use https remote without `.git` suffix, we will add `.git` when we need it.
  */
