@@ -57,4 +57,23 @@ describe('credential', () => {
     expect(restoredRemoteUrl).toBe(originalRemoteUrl);
     expect(restoredRemoteUrl.includes(exampleToken)).toBe(false);
   });
+
+  test('methods are idempotent', async () => {
+    const originalRemoteUrl = await getRemoteUrl(dir, defaultGitInfo.remote);
+    await credentialOn(dir, originalRemoteUrl, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+    const newRemoteUrl1 = await getRemoteUrl(dir, defaultGitInfo.remote);
+    expect(newRemoteUrl1.includes(exampleToken)).toBe(true);
+    await credentialOn(dir, newRemoteUrl1, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+    await credentialOn(dir, newRemoteUrl1, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+    await credentialOn(dir, newRemoteUrl1, defaultGitInfo.gitUserName, exampleToken, defaultGitInfo.remote);
+    const newRemoteUrl2 = await getRemoteUrl(dir, defaultGitInfo.remote);
+    expect(newRemoteUrl2.includes(exampleToken)).toBe(true);
+    expect(newRemoteUrl2).toBe(newRemoteUrl1);
+    await credentialOff(dir, defaultGitInfo.remote);
+    await credentialOff(dir, defaultGitInfo.remote);
+    await credentialOff(dir, defaultGitInfo.remote);
+    const restoredRemoteUrl = await getRemoteUrl(dir, defaultGitInfo.remote);
+    expect(restoredRemoteUrl).toBe(originalRemoteUrl);
+    expect(restoredRemoteUrl.includes(exampleToken)).toBe(false);
+  });
 });
