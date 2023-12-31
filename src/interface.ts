@@ -71,6 +71,32 @@ export enum GitStep {
   SynchronizationFinish = 'SynchronizationFinish',
 }
 /**
- * Steps that indicate we have new files, so we can restart our wiki to reload changes
+ * Steps that indicate we have new files, so we can restart our wiki to reload changes.
+ *
+ * @example <pre><code>
+ * // (inside a promise)
+ * let hasChanges = false;
+    observable?.subscribe({
+      next: (messageObject) => {
+        if (messageObject.level === 'error') {
+          return;
+        }
+        const { meta } = messageObject;
+        if (typeof meta === 'object' && meta !== null && 'step' in meta && stepsAboutChange.includes((meta as { step: GitStep }).step)) {
+          hasChanges = true;
+        }
+      },
+      complete: () => {
+        resolve(hasChanges);
+      },
+    });
+  </code></pre>
  */
-export const stepsAboutChange = [GitStep.FetchingData, GitStep.LocalStateBehindSync, GitStep.RebaseSucceed];
+export const stepsAboutChange = [
+  GitStep.GitMerge,
+  GitStep.FetchingData,
+  GitStep.LocalStateBehindSync,
+  GitStep.RebaseSucceed,
+  GitStep.LocalStateDivergeRebase,
+  GitStep.FinishForcePull,
+];
