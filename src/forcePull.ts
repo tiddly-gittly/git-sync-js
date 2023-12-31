@@ -1,8 +1,9 @@
 import { GitProcess } from 'dugite';
+import { syncPreflightCheck } from './commitAndSync';
 import { credentialOff, credentialOn } from './credential';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { CantForcePullError, SyncParameterMissingError } from './errors';
-import { getDefaultBranchName, getRemoteName } from './inspect';
+import { getDefaultBranchName, getRemoteName, getSyncState } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { fetchRemote } from './sync';
 
@@ -58,12 +59,28 @@ export async function forcePull(options: IForcePullOptions) {
     });
 
   logProgress(GitStep.StartForcePull);
-  logDebug(`Successfully Running git init for force pull in dir ${dir}`, GitStep.StartForcePull);
+  logDebug(`Do preflight Check before force pull in dir ${dir}`, GitStep.StartForcePull);
+  // preflight check
+  await syncPreflightCheck({
+    dir,
+    logger,
+    logProgress,
+    logDebug,
+    defaultGitInfo,
+    userInfo,
+  });
   logProgress(GitStep.StartConfiguringGithubRemoteRepository);
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   try {
     logProgress(GitStep.StartFetchingFromGithubRemote);
     await fetchRemote(dir, defaultGitInfo.remote, defaultGitInfo.branch);
+    const syncState = await getSyncState(dir, defaultBranchName, remoteName, logger);
+    logDebug(`syncState in dir ${dir} is ${syncState}`, GitStep.StartFetchingFromGithubRemote);
+    if (syncState === 'equal') {
+      // if there is no new commit in remote (and nothing messy in local), we don't need to pull.
+      logProgress(GitStep.SkipForcePull);
+      return;
+    }
     logProgress(GitStep.StartResettingLocalToRemote);
     await hardResetLocalToRemote(dir, branch, remoteName);
     logProgress(GitStep.FinishForcePull);

@@ -60,6 +60,7 @@ export enum GitStep {
   RebaseConflictNeedsResolve = 'RebaseConflictNeedsResolve',
   RebaseResultChecking = 'RebaseResultChecking',
   RebaseSucceed = 'RebaseSucceed',
+  SkipForcePull = 'SkipForcePull',
   StartBackupToGitRemote = 'StartBackupToGitRemote',
   StartConfiguringGithubRemoteRepository = 'StartConfiguringGithubRemoteRepository',
   StartFetchingFromGithubRemote = 'StartFetchingFromGithubRemote',

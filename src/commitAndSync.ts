@@ -72,16 +72,15 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     });
 
   // preflight check
-  const repoStartingState = await getGitRepositoryState(dir, logger);
-  if (repoStartingState.length === 0 || repoStartingState === '|DIRTY') {
-    logProgress(GitStep.PrepareSync);
-    logDebug(`${dir} repoStartingState: ${repoStartingState}, ${gitUserName} <${email ?? defaultGitInfo.email}>`, GitStep.PrepareSync);
-  } else if (repoStartingState === 'NOGIT') {
-    throw new CantSyncGitNotInitializedError(dir);
-  } else {
-    // we may be in middle of a rebase, try fix that
-    await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger, repoStartingState);
-  }
+  await syncPreflightCheck({
+    dir,
+    logger,
+    logProgress,
+    logDebug,
+    defaultGitInfo,
+    userInfo,
+  });
+
   if (await haveLocalChanges(dir)) {
     logProgress(GitStep.HaveThingsToCommit);
     logDebug(commitMessage, GitStep.HaveThingsToCommit);
@@ -187,5 +186,34 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   } finally {
     // always restore original remoteUrl without token
     await credentialOff(dir, remoteUrl);
+  }
+}
+
+/**
+ * Check for git repo state, if it is not clean, try fix it. If not init will throw error.
+ * This method is used by commitAndSync and forcePull before they doing anything.
+ */
+export async function syncPreflightCheck(configs: {
+  /** defaultGitInfo from ICommitAndSyncOptions */
+  defaultGitInfo?: typeof defaultDefaultGitInfo;
+  dir: string;
+  logDebug?: (message: string, step: GitStep) => unknown;
+  logProgress?: (step: GitStep) => unknown;
+  logger?: ILogger;
+  /** userInfo from ICommitAndSyncOptions */
+  userInfo?: IGitUserInfos;
+}) {
+  const { dir, logger, logProgress, logDebug, defaultGitInfo = defaultDefaultGitInfo, userInfo } = configs;
+  const { gitUserName, email } = userInfo ?? defaultGitInfo;
+
+  const repoStartingState = await getGitRepositoryState(dir, logger);
+  if (repoStartingState.length === 0 || repoStartingState === '|DIRTY') {
+    logProgress?.(GitStep.PrepareSync);
+    logDebug?.(`${dir} repoStartingState: ${repoStartingState}, ${gitUserName} <${email ?? defaultGitInfo.email}>`, GitStep.PrepareSync);
+  } else if (repoStartingState === 'NOGIT') {
+    throw new CantSyncGitNotInitializedError(dir);
+  } else {
+    // we may be in middle of a rebase, try fix that
+    await continueRebase(dir, gitUserName, email ?? defaultGitInfo.email, logger, repoStartingState);
   }
 }
