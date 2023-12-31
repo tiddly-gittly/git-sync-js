@@ -1,6 +1,6 @@
 {
   "name": "git-sync-js",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "JS implementation for Git-Sync, a handy script that backup your notes in a git repo to the remote git services.",
   "homepage": "https://github.com/linonetwo/git-sync-js",
   "bugs": {
@@ -18,7 +18,7 @@
     "dist/src/"
   ],
   "scripts": {
-    "prepublishOnly": "npm run clean && npm run compile",
+    "prepublishOnly": "npm run clean && npm run test && npm run lint && npm run compile",
     "test": "npm run clean:test && jest",
     "clean": "rimraf --no-glob dist",
     "clean:test": "rimraf test/mockRepo test/mockRepo2 test/mockUpstreamRepo",
