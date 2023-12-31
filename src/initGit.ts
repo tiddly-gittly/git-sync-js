@@ -8,6 +8,7 @@ import { commitFiles } from './sync';
 
 export type IInitGitOptions = IInitGitOptionsSyncImmediately | IInitGitOptionsNotSync;
 export interface IInitGitOptionsSyncImmediately {
+  /** Optional fallback of userInfo. If some info is missing in userInfo, will use defaultGitInfo instead. */
   defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative */
   dir: string;

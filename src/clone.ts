@@ -8,6 +8,7 @@ import { getRemoteName } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
 
 export async function clone(options: {
+  /** Optional fallback of userInfo. If some info is missing in userInfo, will use defaultGitInfo instead. */
   defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative, should exist before function call */
   dir: string;

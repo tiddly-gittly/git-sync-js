@@ -10,6 +10,7 @@ export interface ICommitAndSyncOptions {
   /** the commit message */
   commitMessage?: string;
   commitOnly?: boolean;
+  /** Optional fallback of userInfo. If some info is missing in userInfo, will use defaultGitInfo instead. */
   defaultGitInfo?: typeof defaultDefaultGitInfo;
   /** wiki folder path, can be relative */
   dir: string;

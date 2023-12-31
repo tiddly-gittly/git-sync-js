@@ -90,3 +90,14 @@ export class CantSyncInSpecialGitStateAutoFixFailed extends Error {
       `E-6 Unable to Sync, this folder is in special condition, thus can't Sync directly. An auto-fix has been tried, but error still remains. Please resolve all the conflict manually (For example, use VSCode to open the wiki folder), if this still don't work out, please use professional Git tools (Source Tree, GitKraken) to solve this. This is caused by procedural bug in the git-sync-js.\n${stateMessage}`;
   }
 }
+
+export class CantForcePullError extends Error {
+  stateMessage: string;
+  constructor(stateMessage: string) {
+    super(stateMessage);
+    Object.setPrototypeOf(this, CantForcePullError.prototype);
+    this.stateMessage = stateMessage;
+    this.name = 'CantForcePullError';
+    this.message = `E-7 Unable to force pull remote. This is caused by procedural bug in the git-sync-js.\n${stateMessage}`;
+  }
+}
