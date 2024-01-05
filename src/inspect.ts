@@ -63,6 +63,11 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
  * Inspect git's remote url from folder's .git config
  * @param dir wiki folder path, git folder to inspect
  * @returns remote url, without `'.git'`
+ * @example ```ts
+const githubRepoUrl = await getRemoteUrl(directory);
+const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
+await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
+```
  */
 export async function getRemoteUrl(dir: string, remoteName: string): Promise<string> {
   const remotes = await listRemotes({ fs, dir });
@@ -74,7 +79,7 @@ export async function getRemoteUrl(dir: string, remoteName: string): Promise<str
 }
 
 /**
- * get the Github Repo Name, similar to "linonetwo/wiki", string after "https://github.com/"
+ * Get the Github Repo Name, which is similar to "linonetwo/wiki", that is the string after "https://github.com/", so we basically just get the pathname of URL.
  * @param remoteUrl full github repository url or other repository url
  * @returns
  */
@@ -93,6 +98,10 @@ export function getRemoteRepoName(remoteUrl: string): string | undefined {
 /**
  * See if there is any file not being committed
  * @param {string} wikiFolderPath repo path to test
+ * @example ```ts
+if (await haveLocalChanges(dir)) {
+  // ... do commit and push
+```
  */
 export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean> {
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);

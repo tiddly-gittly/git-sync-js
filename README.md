@@ -136,31 +136,6 @@ Get modified files and modify type in a folder
 await getModifiedFileList(wikiFolderPath);
 ```
 
-### getRemoteUrl
-
-Inspect git's remote url from folder's .git config
-
-```ts
-export async function credentialOff(directory: string, remoteUrl?: string): Promise<void> {
-  const githubRepoUrl = remoteUrl ?? (await getRemoteUrl(directory));
-  const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
-}
-```
-
-### getRemoteRepoName
-
-get the Github Repo Name, which is similar to "linonetwo/wiki", that is the string after "https://github.com/", so we basically just get the pathname of URL.
-
-### haveLocalChanges
-
-See if there is any file not being committed
-
-```ts
-if (await haveLocalChanges(dir)) {
-  // ... do commit and push
-```
-
 ### getDefaultBranchName
 
 ### getSyncState
