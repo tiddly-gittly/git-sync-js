@@ -185,7 +185,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
     }
   } finally {
     // always restore original remoteUrl without token
-    await credentialOff(dir, remoteUrl);
+    await credentialOff(dir, remoteName, remoteUrl);
   }
 }
 

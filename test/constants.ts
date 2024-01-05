@@ -2,6 +2,7 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 /* eslint-disable unicorn/prefer-module */
 import path from 'path';
+import { IGitUserInfos } from '../src/interface';
 
 /**
  * Random dir name to prevent parallel test execution collision
@@ -22,6 +23,14 @@ export let gitDirectory: string;
 export let upstreamDirGitDirectory: string;
 export let gitSyncRepoDirectory: string;
 export let gitSyncRepoDirectoryGitDirectory: string;
+
+export const creatorGitInfo: IGitUserInfos & { remote: string } = {
+  email: 'gitsync@gmail.com',
+  gitUserName: 'linonetwo',
+  branch: 'master',
+  remote: 'origin',
+  accessToken: 'ghp_zA8Xet3mupV6kWj2sFsKUpTv45hJA6ZJyzY6',
+};
 
 /**
  * use currentTestName to get better constants, should call in jest functions as early as possible
