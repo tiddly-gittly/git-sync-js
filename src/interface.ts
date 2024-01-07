@@ -94,10 +94,7 @@ export enum GitStep {
   </code></pre>
  */
 export const stepsAboutChange = [
-  GitStep.GitMerge,
-  GitStep.FetchingData,
-  GitStep.LocalStateBehindSync,
+  GitStep.GitMergeComplete,
   GitStep.RebaseSucceed,
-  GitStep.LocalStateDivergeRebase,
   GitStep.FinishForcePull,
 ];
