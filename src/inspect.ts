@@ -1,6 +1,4 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
-/* eslint-disable unicorn/prevent-abbreviations */
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import fs from 'fs-extra';
 import { listRemotes } from 'isomorphic-git';
 import { compact } from 'lodash';
@@ -8,6 +6,7 @@ import path from 'path';
 import url from 'url';
 import { AssumeSyncError, CantSyncGitNotInitializedError } from './errors';
 import { GitStep, ILogger } from './interface';
+import { toGitStringResult } from './utils';
 
 const gitEscapeToEncodedUri = (str: string): string => str.replaceAll(/\\(\d{3})/g, (_: unknown, $1: string) => `%${Number.parseInt($1, 8).toString(16)}`);
 const decodeGitEscape = (rawString: string): string => decodeURIComponent(gitEscapeToEncodedUri(rawString));
@@ -22,10 +21,10 @@ export interface ModifiedFileList {
  * @param {string} wikiFolderPath location to scan git modify state
  */
 export async function getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
-  const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
+  const { stdout } = toGitStringResult(await exec(['status', '--porcelain'], wikiFolderPath));
   const stdoutLines = stdout.split('\n');
   const nonEmptyLines = compact(stdoutLines);
-  const statusMatrixLines = compact(nonEmptyLines.map((line: string) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+.*\S+)$/.exec(line))).filter(
+  const statusMatrixLines = compact(nonEmptyLines.map((line) => /^\s?(\?\?|[ACMR]|[ACMR][DM])\s?(\S+.*\S+)$/.exec(line))).filter(
     ([_, type, fileRelativePath]) => type !== undefined && fileRelativePath !== undefined,
   ) as unknown as Array<[unknown, string, string]>;
   return statusMatrixLines
@@ -66,7 +65,7 @@ export async function getModifiedFileList(wikiFolderPath: string): Promise<Modif
  * @example ```ts
 const githubRepoUrl = await getRemoteUrl(directory);
 const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
+await exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
 ```
  */
 export async function getRemoteUrl(dir: string, remoteName: string): Promise<string> {
@@ -104,10 +103,12 @@ if (await haveLocalChanges(dir)) {
 ```
  */
 export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean> {
-  const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
+  const { stdout } = toGitStringResult(await exec(['status', '--porcelain'], wikiFolderPath));
   const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  return !!matchResult?.some?.(Boolean);
+  if (!matchResult) {
+    return false;
+  }
+  return matchResult.some((entry) => Boolean(entry));
 }
 
 /**
@@ -118,7 +119,7 @@ export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean>
  */
 export async function getDefaultBranchName(wikiFolderPath: string): Promise<string | undefined> {
   try {
-    const { stdout } = await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], wikiFolderPath);
+    const { stdout } = toGitStringResult(await exec(['rev-parse', '--abbrev-ref', 'HEAD'], wikiFolderPath));
     const [branchName] = stdout.split('\n');
     // don't return empty string, so we can use ?? syntax
     if (branchName === '') {
@@ -151,7 +152,7 @@ export async function getSyncState(dir: string, defaultBranchName: string, remot
   logProgress(GitStep.CheckingLocalSyncState);
   remoteName = remoteName ?? (await getRemoteName(dir, defaultBranchName));
   const gitArgs = ['rev-list', '--count', '--left-right', `${remoteName}/${defaultBranchName}...HEAD`];
-  const { stdout, stderr } = await GitProcess.exec(gitArgs, dir);
+  const { stdout, stderr } = toGitStringResult(await exec(gitArgs, dir));
   logDebug(`Checking sync state with upstream, command: \`git ${gitArgs.join(' ')}\` , stdout:\n${stdout}\n(stdout end)`, GitStep.CheckingLocalSyncState);
   if (stderr.length > 0) {
     logDebug(`Have problem checking sync state with upstream,stderr:\n${stderr}\n(stderr end)`, GitStep.CheckingLocalSyncState);
@@ -202,22 +203,26 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
     return 'NOGIT';
   }
   const gitDirectory = await getGitDirectory(wikiFolderPath, logger);
+  const statExists = async (segments: string[], method: 'isFile' | 'isDirectory'): Promise<boolean> => {
+    try {
+      const stats = await fs.lstat(path.join(gitDirectory, ...segments));
+      if (method === 'isFile') {
+        return stats.isFile();
+      }
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
+  };
   const [isRebaseI, isRebaseM, isAMRebase, isMerging, isCherryPicking, isBisecting] = await Promise.all([
-    // isRebaseI
-    ((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
-    // isRebaseM
-    ((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory?.(),
-    // isAMRebase
-    ((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory?.(),
-    // isMerging
-    ((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
-    // isCherryPicking
-    ((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
-    // isBisecting
-    ((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile?.(),
+    statExists(['rebase-merge', 'interactive'], 'isFile'),
+    statExists(['rebase-merge'], 'isDirectory'),
+    statExists(['rebase-apply'], 'isDirectory'),
+    statExists(['MERGE_HEAD'], 'isFile'),
+    statExists(['CHERRY_PICK_HEAD'], 'isFile'),
+    statExists(['BISECT_LOG'], 'isFile'),
   ]);
   let result = '';
-  /* eslint-disable @typescript-eslint/strict-boolean-expressions */
   if (isRebaseI) {
     result += 'REBASE-i';
   } else if (isRebaseM) {
@@ -236,10 +241,11 @@ export async function getGitRepositoryState(wikiFolderPath: string, logger?: ILo
       result += 'BISECTING';
     }
   }
-  result += (await GitProcess.exec(['rev-parse', '--is-bare-repository', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true') ? '|BARE' : '';
+  const isBareResult = toGitStringResult(await exec(['rev-parse', '--is-bare-repository', wikiFolderPath], wikiFolderPath));
+  result += isBareResult.stdout.startsWith('true') ? '|BARE' : '';
 
-  /* if ((await GitProcess.exec(['rev-parse', '--is-inside-work-tree', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true')) {
-    const { exitCode } = await GitProcess.exec(['diff', '--no-ext-diff', '--quiet', '--exit-code'], wikiFolderPath);
+  /* if ((await exec(['rev-parse', '--is-inside-work-tree', wikiFolderPath], wikiFolderPath)).stdout.startsWith('true')) {
+    const { exitCode } = await exec(['diff', '--no-ext-diff', '--quiet', '--exit-code'], wikiFolderPath);
     // 1 if there were differences and 0 means no differences.
     if (exitCode !== 0) {
       result += '|DIRTY';
@@ -267,14 +273,16 @@ export async function getGitDirectory(dir: string, logger?: ILogger): Promise<st
     });
 
   logProgress(GitStep.CheckingLocalGitRepoSanity);
-  const { stdout, stderr } = await GitProcess.exec(['rev-parse', '--is-inside-work-tree', dir], dir);
-  if (typeof stderr === 'string' && stderr.length > 0) {
+  const { stdout, stderr } = toGitStringResult(await exec(['rev-parse', '--is-inside-work-tree', dir], dir));
+  if (stderr.length > 0) {
     logDebug(stderr, GitStep.CheckingLocalGitRepoSanity);
     throw new CantSyncGitNotInitializedError(dir);
   }
   if (stdout.startsWith('true')) {
-    const { stdout: stdout2 } = await GitProcess.exec(['rev-parse', '--git-dir', dir], dir);
-    const [gitPath2, gitPath1] = compact(stdout2.split('\n'));
+    const gitDirResult = toGitStringResult(await exec(['rev-parse', '--git-dir', dir], dir));
+    const gitPathParts = compact(gitDirResult.stdout.split('\n'));
+    const gitPath2 = gitPathParts[0];
+    const gitPath1 = gitPathParts[1];
     if (gitPath2 !== undefined && gitPath1 !== undefined) {
       return path.resolve(gitPath1, gitPath2);
     }
@@ -308,15 +316,15 @@ export async function hasGit(dir: string, strict = true): Promise<boolean> {
  * https://github.com/simonthum/git-sync/blob/31cc140df2751e09fae2941054d5b61c34e8b649/git-sync#L238-L257
  */
 export async function getRemoteName(dir: string, branch: string): Promise<string> {
-  let { stdout } = await GitProcess.exec(['config', '--get', `branch.${branch}.pushRemote`], dir);
+  let { stdout } = toGitStringResult(await exec(['config', '--get', `branch.${branch}.pushRemote`], dir));
   if (stdout.trim()) {
     return stdout.trim();
   }
-  ({ stdout } = await GitProcess.exec(['config', '--get', `remote.pushDefault`], dir));
+  ({ stdout } = toGitStringResult(await exec(['config', '--get', `remote.pushDefault`], dir)));
   if (stdout.trim()) {
     return stdout.trim();
   }
-  ({ stdout } = await GitProcess.exec(['config', '--get', `branch.${branch}.remote`], dir));
+  ({ stdout } = toGitStringResult(await exec(['config', '--get', `branch.${branch}.remote`], dir)));
   if (stdout.trim()) {
     return stdout.trim();
   }

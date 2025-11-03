@@ -16,17 +16,17 @@ There are three major functions: `initGit, clone, commitAndSync`, but you may im
 
 ```ts
 import {
-  initGit,
-  clone,
-  commitAndSync,
   AssumeSyncError,
   CantSyncGitNotInitializedError,
   CantSyncInSpecialGitStateAutoFixFailed,
+  clone,
+  commitAndSync,
   getModifiedFileList,
   getRemoteUrl,
   GitPullPushError,
   GitStep,
   ILoggerContext,
+  initGit,
   ModifiedFileList,
   SyncParameterMissingError,
   SyncScriptIsInDeadLoopError,
@@ -49,10 +49,8 @@ try {
     syncImmediately: isSyncedWiki,
     userInfo: { ...defaultGitInfo, ...userInfo },
     logger: {
-      log: (message: string, context: ILoggerContext): unknown =>
-        logger.info(message, { callerFunction: 'initWikiGit', ...context }),
-      warn: (message: string, context: ILoggerContext): unknown =>
-        logger.warn(message, { callerFunction: 'initWikiGit', ...context }),
+      log: (message: string, context: ILoggerContext): unknown => logger.info(message, { callerFunction: 'initWikiGit', ...context }),
+      warn: (message: string, context: ILoggerContext): unknown => logger.warn(message, { callerFunction: 'initWikiGit', ...context }),
       info: (message: GitStep, context: ILoggerContext): void => {
         logger.notice(this.translateMessage(message), {
           handler: WikiChannel.syncProgress,
@@ -78,10 +76,8 @@ try {
     remoteUrl,
     userInfo: { ...defaultGitInfo, ...userInfo },
     logger: {
-      log: (message: string, context: ILoggerContext): unknown =>
-        logger.info(message, { callerFunction: 'commitAndSync', ...context }),
-      warn: (message: string, context: ILoggerContext): unknown =>
-        logger.warn(message, { callerFunction: 'commitAndSync', ...context }),
+      log: (message: string, context: ILoggerContext): unknown => logger.info(message, { callerFunction: 'commitAndSync', ...context }),
+      warn: (message: string, context: ILoggerContext): unknown => logger.warn(message, { callerFunction: 'commitAndSync', ...context }),
       info: (message: GitStep, context: ILoggerContext): void => {
         logger.notice(this.translateMessage(message), {
           handler: WikiChannel.syncProgress,
@@ -108,10 +104,8 @@ try {
     remoteUrl,
     userInfo: { ...defaultGitInfo, ...userInfo },
     logger: {
-      log: (message: string, context: ILoggerContext): unknown =>
-        logger.info(message, { callerFunction: 'clone', ...context }),
-      warn: (message: string, context: ILoggerContext): unknown =>
-        logger.warn(message, { callerFunction: 'clone', ...context }),
+      log: (message: string, context: ILoggerContext): unknown => logger.info(message, { callerFunction: 'clone', ...context }),
+      warn: (message: string, context: ILoggerContext): unknown => logger.warn(message, { callerFunction: 'clone', ...context }),
       info: (message: GitStep, context: ILoggerContext): void => {
         logger.notice(this.translateMessage(message), {
           handler: WikiChannel.syncProgress,

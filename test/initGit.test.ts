@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
@@ -6,14 +5,7 @@ import { initGitWithBranch } from '../src/init';
 import { initGit } from '../src/initGit';
 import { assumeSync, getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
 import { commitFiles, fetchRemote, pushUpstream } from '../src/sync';
-import {
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  dir,
-  exampleToken,
-  gitDirectory,
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  upstreamDir,
-} from './constants';
+import { dir, exampleToken, gitDirectory, upstreamDir } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles } from './utils';
 
 describe('initGit', () => {

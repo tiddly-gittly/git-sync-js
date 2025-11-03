@@ -1,7 +1,6 @@
+import { exec } from 'dugite';
 import fs from 'fs-extra';
 import path from 'path';
-/* eslint-disable unicorn/prevent-abbreviations */
-import { GitProcess } from 'dugite';
 import { defaultGitInfo } from './defaultGitInfo';
 
 export interface IGitInitOptions {
@@ -16,8 +15,8 @@ export interface IGitInitOptions {
    * Following techniques are not working:
    *
    * ```js
-   * await GitProcess.exec(['symbolic-ref', 'HEAD', `refs/heads/${branch}`], dir);
-   * await GitProcess.exec(['checkout', `-b`, branch], dir);
+   * await exec(['symbolic-ref', 'HEAD', `refs/heads/${branch}`], dir);
+   * await exec(['checkout', `-b`, branch], dir);
    * ```
    *
    * This works:
@@ -33,12 +32,12 @@ export async function initGitWithBranch(dir: string, branch = defaultGitInfo.bra
   if (options?.bare === true) {
     const bareGitPath = path.join(dir, '.git');
     await fs.mkdirp(bareGitPath);
-    await GitProcess.exec(['init', `--initial-branch=${branch}`, '--bare'], bareGitPath);
+    await exec(['init', `--initial-branch=${branch}`, '--bare'], bareGitPath);
   } else {
-    await GitProcess.exec(['init', `--initial-branch=${branch}`], dir);
+    await exec(['init', `--initial-branch=${branch}`], dir);
   }
 
   if (options?.initialCommit !== false) {
-    await GitProcess.exec(['commit', `--allow-empty`, '-n', '-m', 'Initial commit when init a new git.'], dir);
+    await exec(['commit', `--allow-empty`, '-n', '-m', 'Initial commit when init a new git.'], dir);
   }
 }

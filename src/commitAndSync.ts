@@ -1,10 +1,11 @@
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import { credentialOff, credentialOn } from './credential';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
 import { CantSyncGitNotInitializedError, GitPullPushError, SyncParameterMissingError } from './errors';
 import { assumeSync, getDefaultBranchName, getGitRepositoryState, getRemoteName, getSyncState, haveLocalChanges } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { commitFiles, continueRebase, fetchRemote, mergeUpstream, pushUpstream } from './sync';
+import { toGitStringResult } from './utils';
 
 export interface ICommitAndSyncOptions {
   /** the commit message */
@@ -144,7 +145,9 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       }
       case 'diverged': {
         logProgress(GitStep.LocalStateDivergeRebase);
-        ({ exitCode, stderr } = await GitProcess.exec(['rebase', `${remoteName}/${defaultBranchName}`], dir));
+        const rebaseResult = toGitStringResult(await exec(['rebase', `${remoteName}/${defaultBranchName}`], dir));
+        exitCode = rebaseResult.exitCode;
+        stderr = rebaseResult.stderr;
         logProgress(GitStep.RebaseResultChecking);
         if (exitCode !== 0) {
           logWarn(`exitCode: ${exitCode}, stderr of git rebase: ${stderr}`, GitStep.RebaseResultChecking);

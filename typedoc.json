@@ -6,7 +6,7 @@
   "compilerOptions": {
     "strictNullChecks": false,
     "skipLibCheck": true,
-    "rootDir": ".",
+    "rootDir": "."
   },
   "readme": "none",
   "entryDocument": "API.md",

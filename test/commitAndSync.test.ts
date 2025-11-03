@@ -1,17 +1,9 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import { omit } from 'lodash';
 import { commitAndSync, ICommitAndSyncOptions } from '../src/commitAndSync';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { GitPullPushError } from '../src/errors';
 import { getRemoteUrl, getSyncState, SyncState } from '../src/inspect';
-import {
-  creatorGitInfo,
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  dir,
-  exampleToken,
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  upstreamDir,
-} from './constants';
+import { creatorGitInfo, dir, exampleToken, upstreamDir } from './constants';
 import { addSomeFiles } from './utils';
 
 describe('commitAndSync', () => {
@@ -37,11 +29,13 @@ describe('commitAndSync', () => {
       remoteUrl: creatorRepoUrl,
       userInfo: { ...creatorGitInfo, branch: 'main' },
     };
-    await expect(async () => await commitAndSync(options)).rejects.toThrow(
+    await expect(async () => {
+      await commitAndSync(options);
+    }).rejects.toThrow(
       new GitPullPushError(
         // print the same error message as Error...
         { ...omit(options, ['remoteUrl', 'userInfo']), branch: 'main', remote: 'origin', userInfo: options.userInfo },
-        `remote: Invalid username or password.
+        `remote: Invalid username or token. Password authentication is not supported for Git operations.
 fatal: Authentication failed for 'https://github.com/linonetwo/wiki/'
 `,
       ),

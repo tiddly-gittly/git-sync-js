@@ -1,4 +1,4 @@
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import { syncPreflightCheck } from './commitAndSync';
 import { credentialOff, credentialOn } from './credential';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
@@ -6,6 +6,7 @@ import { CantForcePullError, SyncParameterMissingError } from './errors';
 import { getDefaultBranchName, getRemoteName, getSyncState } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
 import { fetchRemote } from './sync';
+import { toGitStringResult } from './utils';
 
 export interface IForcePullOptions {
   /** Optional fallback of userInfo. If some info is missing in userInfo, will use defaultGitInfo instead. */
@@ -99,7 +100,7 @@ export async function forcePull(options: IForcePullOptions) {
  * Internal method used by forcePull, does the `reset --hard`.
  */
 export async function hardResetLocalToRemote(dir: string, branch: string, remoteName: string) {
-  const { exitCode, stderr } = await GitProcess.exec(['reset', '--hard', `${remoteName}/${branch}`], dir);
+  const { exitCode, stderr } = toGitStringResult(await exec(['reset', '--hard', `${remoteName}/${branch}`], dir));
   if (exitCode !== 0) {
     throw new CantForcePullError(`${remoteName}/${branch} ${stderr}`);
   }

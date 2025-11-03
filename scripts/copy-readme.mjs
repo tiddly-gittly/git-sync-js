@@ -1,4 +1,3 @@
-/* eslint-disable security-node/detect-crlf */
 import * as fs from 'fs';
 
 const sourcePath = './README.md';

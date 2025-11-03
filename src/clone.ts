@@ -1,4 +1,4 @@
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import { truncate } from 'lodash';
 import { credentialOff, credentialOn } from './credential';
 import { defaultGitInfo as defaultDefaultGitInfo } from './defaultGitInfo';
@@ -6,6 +6,7 @@ import { GitPullPushError, SyncParameterMissingError } from './errors';
 import { initGitWithBranch } from './init';
 import { getRemoteName } from './inspect';
 import { GitStep, IGitUserInfos, ILogger } from './interface';
+import { toGitStringResult } from './utils';
 
 export async function clone(options: {
   /** Optional fallback of userInfo. If some info is missing in userInfo, will use defaultGitInfo instead. */
@@ -64,7 +65,7 @@ export async function clone(options: {
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   try {
     logProgress(GitStep.StartFetchingFromGithubRemote);
-    const { stderr: pullStdError, exitCode } = await GitProcess.exec(['pull', remoteName, `${branch}:${branch}`], dir);
+    const { stderr: pullStdError, exitCode } = toGitStringResult(await exec(['pull', remoteName, `${branch}:${branch}`], dir));
     if (exitCode === 0) {
       logProgress(GitStep.SynchronizationFinish);
     } else {

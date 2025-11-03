@@ -1,15 +1,10 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import path from 'path';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { AssumeSyncError } from '../src/errors';
 import { assumeSync, getModifiedFileList, getSyncState, SyncState } from '../src/inspect';
 import { commitFiles, fetchRemote, mergeUpstream, pushUpstream } from '../src/sync';
-import {
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  dir,
-  exampleToken,
-} from './constants';
+import { dir, exampleToken } from './constants';
 import { addAnUpstream, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
 
 describe('commitFiles', () => {

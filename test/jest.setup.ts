@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/promise-function-async */
-/* eslint-disable security/detect-non-literal-fs-filename */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';

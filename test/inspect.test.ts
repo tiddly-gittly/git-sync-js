@@ -1,5 +1,4 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import fs from 'fs-extra';
 import os from 'os';
 import path from 'path';
@@ -20,18 +19,7 @@ import {
   SyncState,
 } from '../src/inspect';
 import { fetchRemote, pushUpstream } from '../src/sync';
-import {
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  dir,
-  exampleImageBuffer,
-  exampleRemoteUrl,
-  exampleRepoName,
-  exampleToken,
-  gitDirectory,
-  gitSyncRepoDirectoryGitDirectory,
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  upstreamDir,
-} from './constants';
+import { dir, exampleImageBuffer, exampleRemoteUrl, exampleRepoName, exampleToken, gitDirectory, gitSyncRepoDirectoryGitDirectory, upstreamDir } from './constants';
 import { addAndCommitUsingDugite, addAnUpstream, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
 
 describe('getGitDirectory', () => {
@@ -74,7 +62,7 @@ describe('getDefaultBranchName', () => {
   });
 
   test("But if we are still using master because there wasn't a black man slavery history in Chinese", async () => {
-    await GitProcess.exec(['branch', '-m', 'main', 'master'], dir);
+    await exec(['branch', '-m', 'main', 'master'], dir);
     const branch = await getDefaultBranchName(dir);
     expect(branch).toBe('master');
   });
@@ -136,7 +124,7 @@ describe('getRemoteRepoName', () => {
   });
 
   test('Throw when not a url', () => {
-    expect(() => getRemoteRepoName('sdfasdf/asdfadsf')).toThrowError(new TypeError('Invalid URL'));
+    expect(() => getRemoteRepoName('sdfasdf/asdfadsf')).toThrow(new TypeError('Invalid URL'));
   });
 });
 
@@ -184,7 +172,9 @@ describe('getSyncState and getGitRepositoryState', () => {
     });
     test('upstream is bare', async () => {
       expect(await getSyncState(dir, defaultGitInfo.branch, defaultGitInfo.remote)).toBe<SyncState>('noUpstreamOrBareUpstream');
-      await expect(async () => await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote)).rejects.toThrow(new AssumeSyncError('noUpstreamOrBareUpstream'));
+      await expect(async () => {
+        await assumeSync(dir, defaultGitInfo.branch, defaultGitInfo.remote);
+      }).rejects.toThrow(new AssumeSyncError('noUpstreamOrBareUpstream'));
     });
     test('still bare there are newly added files', async () => {
       await addSomeFiles();

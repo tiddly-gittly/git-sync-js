@@ -1,16 +1,8 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs-extra';
 import { clone } from '../src/clone';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { getDefaultBranchName, getSyncState, hasGit, haveLocalChanges, SyncState } from '../src/inspect';
-import {
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  dir,
-  exampleToken,
-  gitDirectory,
-  // eslint-disable-next-line unicorn/prevent-abbreviations
-  upstreamDir,
-} from './constants';
+import { dir, exampleToken, gitDirectory, upstreamDir } from './constants';
 import { addAndCommitUsingDugite, addSomeFiles, anotherRepo2PushSomeFiles, createAndSyncRepo2ToRemote } from './utils';
 
 describe('clone', () => {

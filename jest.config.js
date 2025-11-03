@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prefer-module */
 /** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
 module.exports = {
   // on slow windows machine with HDD, some test will timeout.

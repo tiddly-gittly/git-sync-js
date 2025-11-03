@@ -1,21 +1,19 @@
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import fs from 'fs-extra';
 import { defaultGitInfo } from '../src/defaultGitInfo';
 import { initGitWithBranch } from '../src/init';
-// eslint-disable-next-line unicorn/prevent-abbreviations
 import { commitFiles, fetchRemote, mergeUpstream, pushUpstream } from '../src/sync';
 import { dir, dir2, exampleImageBuffer, exampleRemoteUrl, exampleToken, upstreamDir } from './constants';
 
 export async function addSomeFiles<T extends [string, string]>(location = dir): Promise<T> {
   const paths: T = [`${location}/image.png`, `${location}/test.json`] as T;
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.writeFile(paths[0], exampleImageBuffer);
   await fs.writeJSON(paths[1], { test: 'test' });
   return paths;
 }
 
 export async function addAnUpstream(repoPath = dir): Promise<void> {
-  await GitProcess.exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], repoPath);
+  await exec(['remote', 'add', defaultGitInfo.remote, upstreamDir], repoPath);
   /**
    * Need to fetch the remote repo first, otherwise it will say:
    *
@@ -30,18 +28,18 @@ export async function addAnUpstream(repoPath = dir): Promise<void> {
 }
 
 export async function addHTTPRemote(remoteName = defaultGitInfo.remote, remoteUrl = exampleRemoteUrl, directory = dir): Promise<void> {
-  await GitProcess.exec(['remote', 'add', remoteName, remoteUrl], directory);
-  await GitProcess.exec(['remote', 'set-url', remoteName, remoteUrl], directory);
+  await exec(['remote', 'add', remoteName, remoteUrl], directory);
+  await exec(['remote', 'set-url', remoteName, remoteUrl], directory);
 }
 
 export async function addAndCommitUsingDugite(
   location = dir,
-  runBetween: () => unknown | Promise<unknown> = () => {},
+  runBetween: () => void | Promise<void> = () => {},
   message = 'some commit message',
 ): Promise<void> {
-  await GitProcess.exec(['add', '.'], location);
+  await exec(['add', '.'], location);
   await runBetween();
-  await GitProcess.exec(['commit', '-m', message, `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], location);
+  await exec(['commit', '-m', message, `--author="${defaultGitInfo.gitUserName} <${defaultGitInfo.email}>"`], location);
 }
 
 export async function createAndSyncRepo2ToRemote(): Promise<void> {
@@ -59,7 +57,10 @@ export async function anotherRepo2PushSomeFiles() {
   try {
     // this can fail if dir1 never push its initial commit to the remote, so remote is still bare and can't be pull. It is OK to ignore this error.
     await mergeUpstream(dir2, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });
-  } catch {}
+  } catch (error) {
+    // Ignore merge failure when the upstream is still bare; expected during setup.
+    void error;
+  }
   await addSomeFiles(dir2);
   await commitFiles(dir2, defaultGitInfo.gitUserName, defaultGitInfo.email);
   await pushUpstream(dir2, defaultGitInfo.branch, defaultGitInfo.remote, { ...defaultGitInfo, accessToken: exampleToken });

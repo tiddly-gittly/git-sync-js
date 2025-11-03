@@ -1,4 +1,4 @@
-import { GitProcess } from 'dugite';
+import { exec } from 'dugite';
 import { trim } from 'lodash';
 import { getRemoteUrl } from './inspect';
 
@@ -32,8 +32,8 @@ export async function credentialOn(
       break;
     }
   }
-  await GitProcess.exec(['remote', 'add', remoteName, gitUrlWithCredential], directory);
-  await GitProcess.exec(['remote', 'set-url', remoteName, gitUrlWithCredential], directory);
+  await exec(['remote', 'add', remoteName, gitUrlWithCredential], directory);
+  await exec(['remote', 'set-url', remoteName, gitUrlWithCredential], directory);
 }
 /**
  *  Add remote without credential
@@ -50,5 +50,5 @@ export async function credentialOff(directory: string, remoteName: string, remot
       break;
     }
   }
-  await GitProcess.exec(['remote', 'set-url', remoteName, gitUrlWithOutCredential], directory);
+  await exec(['remote', 'set-url', remoteName, gitUrlWithOutCredential], directory);
 }

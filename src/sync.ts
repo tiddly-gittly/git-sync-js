@@ -1,11 +1,11 @@
-/* eslint-disable unicorn/prevent-abbreviations */
-import { GitProcess, IGitResult } from 'dugite';
+import { exec, type IGitStringResult } from 'dugite';
 import fs from 'fs-extra';
 import { listFiles, remove } from 'isomorphic-git';
 
 import { CantSyncInSpecialGitStateAutoFixFailed, GitPullPushError, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
 import { GitStep, IGitUserInfos, IGitUserInfosWithoutToken, ILogger } from './interface';
+import { toGitStringResult } from './utils';
 
 /**
  * Git add and commit all file
@@ -21,7 +21,7 @@ export async function commitFiles(
   message = 'Commit with Git-Sync-JS',
   filesToIgnore: string[] = [],
   logger?: ILogger,
-): Promise<IGitResult> {
+): Promise<IGitStringResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'commitFiles',
@@ -30,7 +30,7 @@ export async function commitFiles(
     });
 
   logProgress(GitStep.AddingFiles);
-  await GitProcess.exec(['add', '.'], dir);
+  await exec(['add', '.'], dir);
   // find and unStage files that are in the ignore list
   const stagedFiles = await listFiles({ fs, dir });
   if (filesToIgnore.length > 0) {
@@ -43,7 +43,7 @@ export async function commitFiles(
   }
 
   logProgress(GitStep.AddComplete);
-  return await GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir);
+  return toGitStringResult(await exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir));
 }
 
 /**
@@ -58,9 +58,9 @@ export async function pushUpstream(
   dir: string,
   branch: string,
   remoteName: string,
-  userInfo?: IGitUserInfos | IGitUserInfosWithoutToken | undefined,
+  userInfo?: IGitUserInfos | IGitUserInfosWithoutToken,
   logger?: ILogger,
-): Promise<IGitResult> {
+): Promise<IGitStringResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'pushUpstream',
@@ -70,7 +70,7 @@ export async function pushUpstream(
   /** when push to remote, we need to specify the local branch name and remote branch name */
   const branchMapping = `${branch}:${branch}`;
   logProgress(GitStep.GitPush);
-  const pushResult = await GitProcess.exec(['push', remoteName, branchMapping], dir);
+  const pushResult = toGitStringResult(await exec(['push', remoteName, branchMapping], dir));
   logProgress(GitStep.GitPushComplete);
   if (pushResult.exitCode !== 0) {
     throw new GitPullPushError({ dir, branch, remote: remoteName, userInfo }, pushResult.stdout + pushResult.stderr);
@@ -89,9 +89,9 @@ export async function mergeUpstream(
   dir: string,
   branch: string,
   remoteName: string,
-  userInfo?: IGitUserInfos | IGitUserInfosWithoutToken | undefined,
+  userInfo?: IGitUserInfos | IGitUserInfosWithoutToken,
   logger?: ILogger,
-): Promise<IGitResult> {
+): Promise<IGitStringResult> {
   const logProgress = (step: GitStep): unknown =>
     logger?.info(step, {
       functionName: 'mergeUpstream',
@@ -99,7 +99,7 @@ export async function mergeUpstream(
       dir,
     });
   logProgress(GitStep.GitMerge);
-  const mergeResult = await GitProcess.exec(['merge', '--ff', '--ff-only', `${remoteName}/${branch}`], dir);
+  const mergeResult = toGitStringResult(await exec(['merge', '--ff', '--ff-only', `${remoteName}/${branch}`], dir));
   logProgress(GitStep.GitMergeComplete);
   if (mergeResult.exitCode !== 0) {
     throw new GitPullPushError({ dir, branch, remote: remoteName, userInfo }, mergeResult.stdout + mergeResult.stderr);
@@ -135,7 +135,7 @@ export async function continueRebase(dir: string, username: string, email: strin
       throw new SyncScriptIsInDeadLoopError();
     }
     const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, username, email, 'Conflict files committed with TiddlyGit-Desktop');
-    const rebaseContinueResult = await GitProcess.exec(['rebase', '--continue'], dir);
+    const rebaseContinueResult = toGitStringResult(await exec(['rebase', '--continue'], dir));
     // get info for logging
     rebaseContinueExitCode = rebaseContinueResult.exitCode;
     rebaseContinueStdError = rebaseContinueResult.stderr;
@@ -158,8 +158,8 @@ export async function continueRebase(dir: string, username: string, email: strin
  */
 export async function fetchRemote(dir: string, remoteName: string, branch?: string) {
   if (branch === undefined) {
-    await GitProcess.exec(['fetch', remoteName], dir);
+    await exec(['fetch', remoteName], dir);
   } else {
-    await GitProcess.exec(['fetch', remoteName, branch], dir);
+    await exec(['fetch', remoteName, branch], dir);
   }
 }

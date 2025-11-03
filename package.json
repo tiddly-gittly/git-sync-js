@@ -26,6 +26,7 @@
     "docs": "docs-ts",
     "lint": "eslint --ext ts .",
     "lint:fix": "eslint --ext ts --fix .",
+    "check": "tsc --noEmit --skipLibCheck",
     "docs:build": "docusaurus build",
     "docs:dev": "docusaurus start",
     "docs:generate": "npm run docs:generate:api && npm run docs:generate:copy",
@@ -33,7 +34,7 @@
     "docs:generate:copy": "zx scripts/copy-readme.mjs"
   },
   "dependencies": {
-    "dugite": "^2.5.2",
+    "dugite": "3.0.0-rc12",
     "fs-extra": "^11.2.0",
     "isomorphic-git": "^1.25.2",
     "lodash": "^4.17.21"

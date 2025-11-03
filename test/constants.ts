@@ -1,6 +1,3 @@
-/* eslint-disable security-node/detect-insecure-randomness */
-/* eslint-disable unicorn/prevent-abbreviations */
-/* eslint-disable unicorn/prefer-module */
 import path from 'path';
 import { IGitUserInfos } from '../src/interface';
 
@@ -44,7 +41,6 @@ export const setGlobalConstants = (): void => {
   /**
    * mockRepoLocation
    */
-  // eslint-disable-next-line unicorn/prevent-abbreviations
   dir = path.join(__dirname, 'mockRepo', repoName);
   dir2 = path.join(__dirname, 'mockRepo2', repoName);
   upstreamDir = path.join(__dirname, 'mockUpstreamRepo', repoName);
