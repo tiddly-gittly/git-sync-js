@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*", "test/**/*", "./*.js", "./*.ts", "./*.mjs", "scripts/**/*"],
+  "include": ["src/**/*", "test/**/*", "./*.js"],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "target": "ESNext",
@@ -20,14 +20,12 @@
     "downlevelIteration": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "allowJs": true,
     "types": ["jest"], /* Type declaration files to be included in compilation. */
     "allowSyntheticDefaultImports": true, /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
     "baseUrl": "./",
     "paths": {
       "*": ["src/@types/*"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "files": ["test/global.d.ts"]
 }

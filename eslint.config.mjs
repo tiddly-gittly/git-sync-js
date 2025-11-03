@@ -6,6 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default [
+  {
+    ignores: ['docusaurus.config.ts', 'eslint.config.mjs', 'jest.config.js', 'scripts/**/*.mjs'],
+  },
   ...tidgiConfig,
   {
     languageOptions: {
@@ -21,6 +24,7 @@ export default [
             './*.config.ts',
             './*.config.js',
             './*.config.mjs',
+            './docusaurus.config.ts',
             './eslint.config.mjs',
             './jest.config.js',
             './scripts/*.mjs',
@@ -47,17 +51,6 @@ export default [
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-    },
-  },
-  {
-    files: ['scripts/**/*.mjs'],
-    languageOptions: {
-      globals: {
-        console: 'readonly',
-      },
-    },
-    rules: {
-      'security-node/detect-crlf': 'off',
     },
   },
 ];
