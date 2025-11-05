@@ -7,7 +7,7 @@ const __dirname = dirname(__filename);
 
 export default [
   {
-    ignores: ['docusaurus.config.ts', 'eslint.config.mjs', 'jest.config.js', 'scripts/**/*.mjs'],
+    ignores: ['docusaurus.config.ts', 'eslint.config.mjs', 'jest.config.js', 'scripts/**/*.mjs', 'dist/**', 'node_modules/**'],
   },
   ...tidgiConfig,
   {
