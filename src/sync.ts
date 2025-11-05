@@ -134,7 +134,7 @@ export async function continueRebase(dir: string, username: string, email: strin
     if (loopCount > 1000) {
       throw new SyncScriptIsInDeadLoopError();
     }
-    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, username, email, 'Conflict files committed with TiddlyGit-Desktop');
+    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(dir, username, email, 'Conflict files committed with Git-Sync-JS', [], logger);
     const rebaseContinueResult = toGitStringResult(await exec(['rebase', '--continue'], dir));
     // get info for logging
     rebaseContinueExitCode = rebaseContinueResult.exitCode;
@@ -156,10 +156,19 @@ export async function continueRebase(dir: string, username: string, email: strin
  * Simply calling git fetch.
  * @param branch if not provided, will fetch all branches
  */
-export async function fetchRemote(dir: string, remoteName: string, branch?: string) {
+export async function fetchRemote(dir: string, remoteName: string, branch?: string, logger?: ILogger) {
+  const logDebug = (message: string): unknown =>
+    logger?.debug(message, {
+      functionName: 'fetchRemote',
+      step: GitStep.FetchingData,
+      dir,
+    });
+
+  logDebug(`Fetching from ${remoteName}${branch ? ` branch ${branch}` : ' all branches'}`);
   if (branch === undefined) {
     await exec(['fetch', remoteName], dir);
   } else {
     await exec(['fetch', remoteName, branch], dir);
   }
+  logDebug(`Fetch completed from ${remoteName}`);
 }

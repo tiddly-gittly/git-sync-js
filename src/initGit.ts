@@ -45,7 +45,7 @@ export async function initGit(options: IInitGitOptions): Promise<void> {
   logDebug(`Running git init in dir ${dir}`, GitStep.StartGitInitialization);
   await initGitWithBranch(dir, branch);
   logDebug(`Succefully Running git init in dir ${dir}`, GitStep.StartGitInitialization);
-  await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email);
+  await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email, 'Initial Commit with Git-Sync-JS', [], logger);
 
   // if we are config local note git, we are done here
   if (syncImmediately !== true) {

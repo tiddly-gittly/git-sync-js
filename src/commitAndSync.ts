@@ -91,6 +91,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
       email ?? defaultGitInfo.email,
       commitMessage,
       filesToIgnore,
+      logger,
     );
     if (commitExitCode !== 0) {
       logWarn(`commit failed ${commitStdError}`, GitStep.CommitComplete);
@@ -110,7 +111,7 @@ export async function commitAndSync(options: ICommitAndSyncOptions): Promise<voi
   await credentialOn(dir, remoteUrl, gitUserName, accessToken, remoteName);
   logProgress(GitStep.FetchingData);
   try {
-    await fetchRemote(dir, remoteName, defaultBranchName);
+    await fetchRemote(dir, remoteName, defaultBranchName, logger);
     let exitCode = 0;
     let stderr: string | undefined;
     const syncStateAfterCommit = await getSyncState(dir, defaultBranchName, remoteName, logger);
