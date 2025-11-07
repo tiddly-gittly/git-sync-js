@@ -1,6 +1,4 @@
 import { exec, type IGitStringResult } from 'dugite';
-import fs from 'fs-extra';
-import { listFiles, remove } from 'isomorphic-git';
 
 import { CantSyncInSpecialGitStateAutoFixFailed, GitPullPushError, SyncScriptIsInDeadLoopError } from './errors';
 import { getGitRepositoryState } from './inspect';
@@ -28,22 +26,64 @@ export async function commitFiles(
       step,
       dir,
     });
+  const logDebug = (message: string, step: GitStep): unknown =>
+    logger?.debug(message, {
+      functionName: 'commitFiles',
+      step,
+      dir,
+    });
 
   logProgress(GitStep.AddingFiles);
-  await exec(['add', '.'], dir);
+  logDebug(`Executing: git add . in ${dir}`, GitStep.AddingFiles);
+  const addResult = toGitStringResult(await exec(['add', '.'], dir));
+  logDebug(`git add exitCode: ${addResult.exitCode}, stdout: ${addResult.stdout || '(empty)'}, stderr: ${addResult.stderr || '(empty)'}`, GitStep.AddingFiles);
+  
+  // Check what's actually in the staging area
+  const statusResult = toGitStringResult(await exec(['status', '--porcelain'], dir));
+  logDebug(`git status --porcelain: ${statusResult.stdout || '(empty)'}`, GitStep.AddingFiles);
+  
+  // Check staged files using git diff --cached
+  const diffCachedResult = toGitStringResult(await exec(['diff', '--cached', '--name-only'], dir));
+  const actualStagedFiles = diffCachedResult.stdout.trim().split('\n').filter(f => f.length > 0);
+  logDebug(`Actual staged files count (from git diff --cached): ${actualStagedFiles.length}`, GitStep.AddingFiles);
+  if (actualStagedFiles.length > 0) {
+    logDebug(`Actual staged files: ${actualStagedFiles.slice(0, 10).join(', ')}${actualStagedFiles.length > 10 ? ` ... (${actualStagedFiles.length - 10} more)` : ''}`, GitStep.AddingFiles);
+  } else {
+    logDebug('No files in staging area after git add!', GitStep.AddingFiles);
+  }
+  
   // find and unStage files that are in the ignore list
-  const stagedFiles = await listFiles({ fs, dir });
   if (filesToIgnore.length > 0) {
-    const stagedFilesToIgnore = filesToIgnore.filter((file) => stagedFiles.includes(file));
+    // Get all tracked files using git ls-files
+    const lsFilesResult = toGitStringResult(await exec(['ls-files'], dir));
+    const trackedFiles = lsFilesResult.stdout.trim().split('\n').filter(f => f.length > 0);
+    logDebug(`Total tracked files count (from git ls-files): ${trackedFiles.length}`, GitStep.AddingFiles);
+    
+    const stagedFilesToIgnore = filesToIgnore.filter((file) => trackedFiles.includes(file));
+    logDebug(`Files to ignore count: ${filesToIgnore.length}, staged files to ignore count: ${stagedFilesToIgnore.length}`, GitStep.AddingFiles);
     if (stagedFilesToIgnore.length > 0) {
+      logDebug(`Unstaging files: ${stagedFilesToIgnore.join(', ')}`, GitStep.AddingFiles);
+      // Use git reset to unstage files
       await Promise.all(stagedFilesToIgnore.map(async (file) => {
-        await remove({ dir, filepath: file, fs });
+        await exec(['reset', 'HEAD', file], dir);
       }));
+      // Re-check staging area after removal
+      const diffCachedAfterRemove = toGitStringResult(await exec(['diff', '--cached', '--name-only'], dir));
+      const remainingStagedFiles = diffCachedAfterRemove.stdout.trim().split('\n').filter(f => f.length > 0);
+      logDebug(`Remaining staged files count after unstaging: ${remainingStagedFiles.length}`, GitStep.AddingFiles);
     }
   }
 
   logProgress(GitStep.AddComplete);
-  return toGitStringResult(await exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir));
+  logDebug(`Executing: git commit -m "${message}" --author="${username} <${email}>"`, GitStep.CommitComplete);
+  const commitResult = toGitStringResult(await exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir));
+  logDebug(`git commit exitCode: ${commitResult.exitCode}, stdout: ${commitResult.stdout || '(empty)'}, stderr: ${commitResult.stderr || '(empty)'}`, GitStep.CommitComplete);
+  
+  if (commitResult.exitCode === 1 && commitResult.stdout.includes('nothing to commit')) {
+    logDebug('Git commit reports "nothing to commit" - this is expected if staging area is empty', GitStep.CommitComplete);
+  }
+  
+  return commitResult;
 }
 
 /**

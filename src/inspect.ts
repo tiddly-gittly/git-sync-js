@@ -1,6 +1,5 @@
 import { exec } from 'dugite';
 import fs from 'fs-extra';
-import { listRemotes } from 'isomorphic-git';
 import { compact } from 'lodash';
 import path from 'path';
 import url from 'url';
@@ -69,11 +68,25 @@ await exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], directory);
 ```
  */
 export async function getRemoteUrl(dir: string, remoteName: string): Promise<string> {
-  const remotes = await listRemotes({ fs, dir });
-  const githubRemote = remotes.find(({ remote }) => remote === remoteName) ?? remotes[0];
-  if ((githubRemote?.url?.length ?? 0) > 0) {
-    return githubRemote!.url;
+  // Use git remote get-url to get the remote URL
+  const result = toGitStringResult(await exec(['remote', 'get-url', remoteName], dir));
+  if (result.exitCode === 0 && result.stdout.trim().length > 0) {
+    return result.stdout.trim();
   }
+  
+  // Fallback: try to get the first remote if the specified one doesn't exist
+  const remotesResult = toGitStringResult(await exec(['remote'], dir));
+  if (remotesResult.exitCode === 0) {
+    const remotes = remotesResult.stdout.trim().split('\n').filter(r => r.length > 0);
+    const firstRemote = remotes[0];
+    if (firstRemote) {
+      const firstRemoteResult = toGitStringResult(await exec(['remote', 'get-url', firstRemote], dir));
+      if (firstRemoteResult.exitCode === 0) {
+        return firstRemoteResult.stdout.trim();
+      }
+    }
+  }
+  
   return '';
 }
 

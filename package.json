@@ -36,7 +36,6 @@
   "dependencies": {
     "dugite": "3.0.0-rc12",
     "fs-extra": "^11.2.0",
-    "isomorphic-git": "^1.25.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
