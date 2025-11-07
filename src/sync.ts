@@ -75,12 +75,26 @@ export async function commitFiles(
   }
 
   logProgress(GitStep.AddComplete);
-  logDebug(`Executing: git commit -m "${message}" --author="${username} <${email}>"`, GitStep.CommitComplete);
-  const commitResult = toGitStringResult(await exec(['commit', '-m', message, `--author="${username} <${email}>"`], dir));
+  logDebug(`Executing: git commit -m "${message}" --author="${username} <${email}>" with committer env vars`, GitStep.CommitComplete);
+  const commitResult = toGitStringResult(
+    await exec(
+      ['commit', '-m', message, `--author="${username} <${email}>"`],
+      dir,
+      {
+        env: {
+          ...process.env,
+          GIT_COMMITTER_NAME: username,
+          GIT_COMMITTER_EMAIL: email,
+        },
+      },
+    ),
+  );
   logDebug(`git commit exitCode: ${commitResult.exitCode}, stdout: ${commitResult.stdout || '(empty)'}, stderr: ${commitResult.stderr || '(empty)'}`, GitStep.CommitComplete);
   
   if (commitResult.exitCode === 1 && commitResult.stdout.includes('nothing to commit')) {
     logDebug('Git commit reports "nothing to commit" - this is expected if staging area is empty', GitStep.CommitComplete);
+  } else if (commitResult.exitCode === 128 && commitResult.stderr.includes('Committer identity unknown')) {
+    logDebug('Git commit failed due to committer identity - this should not happen with env vars set', GitStep.CommitComplete);
   }
   
   return commitResult;

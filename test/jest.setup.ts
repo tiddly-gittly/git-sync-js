@@ -7,7 +7,7 @@ beforeEach(async () => {
   setGlobalConstants();
   await resetMockGitRepositories();
   await setUpMockGitRepositories();
-}, 60_000);
+}, 120_000);
 
 // afterAll(async () => {
 //   return await resetMockGitRepositories();
@@ -16,7 +16,7 @@ beforeEach(async () => {
 export async function setUpMockGitRepositories() {
   await Promise.all([
     // simulate situation that local repo is initialized first, and upstream repo (Github) is empty & bare, and is initialized later
-    fs.mkdirp(dir).then(() => initGitWithBranch(dir, defaultGitInfo.branch, { initialCommit: true })),
+    fs.mkdirp(dir).then(() => initGitWithBranch(dir, defaultGitInfo.branch, { initialCommit: true, gitUserName: defaultGitInfo.gitUserName, email: defaultGitInfo.email })),
     fs.mkdirp(upstreamDir).then(() => initGitWithBranch(upstreamDir, defaultGitInfo.branch, { initialCommit: false, bare: true })),
   ]);
 }

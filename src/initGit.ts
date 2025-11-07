@@ -43,7 +43,7 @@ export async function initGit(options: IInitGitOptions): Promise<void> {
   logProgress(GitStep.StartGitInitialization);
   const { gitUserName, email, branch } = userInfo ?? defaultGitInfo;
   logDebug(`Running git init in dir ${dir}`, GitStep.StartGitInitialization);
-  await initGitWithBranch(dir, branch);
+  await initGitWithBranch(dir, branch, { gitUserName, email: email ?? defaultGitInfo.email });
   logDebug(`Succefully Running git init in dir ${dir}`, GitStep.StartGitInitialization);
   await commitFiles(dir, gitUserName, email ?? defaultGitInfo.email, 'Initial Commit with Git-Sync-JS', [], logger);
 

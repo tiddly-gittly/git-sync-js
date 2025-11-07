@@ -44,7 +44,7 @@ export async function addAndCommitUsingDugite(
 
 export async function createAndSyncRepo2ToRemote(): Promise<void> {
   await fs.mkdirp(dir2);
-  await initGitWithBranch(dir2, defaultGitInfo.branch, { initialCommit: false, bare: false });
+  await initGitWithBranch(dir2, defaultGitInfo.branch, { initialCommit: false, bare: false, gitUserName: defaultGitInfo.gitUserName, email: defaultGitInfo.email });
   await addAnUpstream(dir2);
 }
 

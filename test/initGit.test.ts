@@ -17,7 +17,7 @@ describe('initGit', () => {
       fs.remove(upstreamDir),
     ]);
     await fs.mkdirp(upstreamDir);
-    await initGitWithBranch(upstreamDir, defaultGitInfo.branch, { initialCommit: false, bare: true });
+    await initGitWithBranch(upstreamDir, defaultGitInfo.branch, { initialCommit: false, bare: true, gitUserName: defaultGitInfo.gitUserName, email: defaultGitInfo.email });
   });
 
   const testBranchName = 'test-branch';

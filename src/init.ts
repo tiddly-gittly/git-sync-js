@@ -23,6 +23,16 @@ export interface IGitInitOptions {
    * https://stackoverflow.com/a/51527691/4617295
    */
   initialCommit?: boolean;
+
+  /**
+   * Git user name for the initial commit
+   */
+  gitUserName?: string;
+
+  /**
+   * Git user email for the initial commit
+   */
+  email?: string;
 }
 
 /**
@@ -38,6 +48,20 @@ export async function initGitWithBranch(dir: string, branch = defaultGitInfo.bra
   }
 
   if (options?.initialCommit !== false) {
-    await exec(['commit', `--allow-empty`, '-n', '-m', 'Initial commit when init a new git.'], dir);
+    const gitUserName = options?.gitUserName ?? defaultGitInfo.gitUserName;
+    const email = options?.email ?? defaultGitInfo.email;
+    await exec(
+      ['commit', `--allow-empty`, '-n', '-m', 'Initial commit when init a new git.'],
+      dir,
+      {
+        env: {
+          ...process.env,
+          GIT_COMMITTER_NAME: gitUserName,
+          GIT_COMMITTER_EMAIL: email,
+          GIT_AUTHOR_NAME: gitUserName,
+          GIT_AUTHOR_EMAIL: email,
+        },
+      },
+    );
   }
 }
