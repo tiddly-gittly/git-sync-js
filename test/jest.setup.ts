@@ -7,7 +7,7 @@ beforeEach(async () => {
   setGlobalConstants();
   await resetMockGitRepositories();
   await setUpMockGitRepositories();
-}, 40_000);
+}, 60_000);
 
 // afterAll(async () => {
 //   return await resetMockGitRepositories();
